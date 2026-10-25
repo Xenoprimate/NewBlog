@@ -1,0 +1,128 @@
+﻿@using Npgsql
+@inject IServiceScopeFactory ScopeFactory
+
+<MudDialog>
+    <DialogContent>
+        <EditForm EditContext="editContext">
+            <DataAnnotationsValidator />
+            <MudStack Spacing="4">
+                <MudTextField T="string" @bind-Value="model.Name" For="() => model.Name" Label="Name" />
+                <div>
+                    <IconPicker @bind-Value="model.Icon" />
+                    <ValidationMessage For="() => model.Icon" />
+                </div>
+            </MudStack>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="saving" OnClick="SaveAsync">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public int? CategoryId { get; set; }
+
+    [Parameter]
+    public string? Name { get; set; }
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    private CategoryEditModel model = new();
+    private EditContext editContext = default!;
+    private ValidationMessageStore messages = default!;
+    private bool saving;
+
+    protected override void OnInitialized()
+    {
+        model = new CategoryEditModel { Name = Name ?? "", Icon = Icon };
+        editContext = new EditContext(model);
+        messages = new ValidationMessageStore(editContext);
+        editContext.OnFieldChanged += (_, e) => messages.Clear(e.FieldIdentifier);
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task SaveAsync()
+    {
+        if (saving || !editContext.Validate())
+        {
+            return;
+        }
+
+        saving = true;
+
+        try
+        {
+            await using var scope = ScopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+            var name = model.Name.Trim();
+            var currentId = CategoryId ?? 0;
+
+            if (await db.Categories.AnyAsync(c => c.Name.ToLower() == name.ToLower() && c.Id != currentId))
+            {
+                ShowNameError("A category with this name already exists.");
+                return;
+            }
+
+            // Category URLs are derived from the name (/categories/{slug}), so the slug must be usable and unique too.
+            var slug = CategoryUrls.SlugFor(name);
+            var otherNames = await db.Categories.Where(c => c.Id != currentId).Select(c => c.Name).ToListAsync();
+
+            if (slug.Length == 0)
+            {
+                ShowNameError("The name needs at least one letter or digit.");
+                return;
+            }
+
+            if (otherNames.Any(other => CategoryUrls.SlugFor(other) == slug))
+            {
+                ShowNameError($"Another category already uses the address /categories/{slug}.");
+                return;
+            }
+
+            if (CategoryId is null)
+            {
+                db.Categories.Add(new Category { Name = name, Icon = model.Icon! });
+            }
+            else
+            {
+                var category = await db.Categories.FindAsync(CategoryId.Value);
+
+                if (category is null)
+                {
+                    MudDialog.Cancel();
+                    return;
+                }
+
+                category.Name = name;
+                category.Icon = model.Icon!;
+            }
+
+            await db.SaveChangesAsync();
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        // The check above can still race with another save; the unique index has the final say.
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            ShowNameError("A category with this name already exists.");
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void ShowNameError(string message)
+    {
+        var field = editContext.Field(nameof(CategoryEditModel.Name));
+        messages.Clear(field);
+        messages.Add(field, message);
+        editContext.NotifyValidationStateChanged();
+    }
+}

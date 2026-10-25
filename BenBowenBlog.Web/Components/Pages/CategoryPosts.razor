@@ -1,0 +1,49 @@
+﻿@page "/categories/{Slug}"
+@inject BlogDbContext Db
+@inject IconCatalog IconCatalog
+@inject NavigationManager Navigation
+
+@if (categoryName is not null)
+{
+    <PageTitle>@categoryName</PageTitle>
+
+    <MudLink Href="/categories" Typo="Typo.body2" Class="d-inline-block mb-4">&larr; All categories</MudLink>
+
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-1">
+        <MudIcon Icon="@IconCatalog.Get(categoryIcon)" Color="Color.Primary" Size="Size.Large" />
+        <MudText Typo="Typo.h3" HtmlTag="h1">@categoryName</MudText>
+    </MudStack>
+    <MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">@(posts.Count == 1 ? "1 post" : $"{posts.Count} posts")</MudText>
+
+    <PostList Posts="posts" ShowCategory="false" />
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = "";
+
+    private string? categoryName;
+    private string? categoryIcon;
+    private List<PostSummary> posts = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Category URLs are derived from names (see CategoryUrls), so match against the few categories in memory.
+        var categories = await Db.Categories.AsNoTracking().Select(c => new { c.Id, c.Name, c.Icon }).ToListAsync();
+        var category = categories.FirstOrDefault(c => CategoryUrls.SlugFor(c.Name) == Slug);
+
+        if (category is not null)
+        {
+            posts = await Db.Posts.AsNoTracking().Published().Where(p => p.CategoryId == category.Id).SelectSummaries().ToListAsync();
+        }
+
+        if (category is null || posts.Count == 0)
+        {
+            Navigation.NotFound();
+            return;
+        }
+
+        categoryName = category.Name;
+        categoryIcon = category.Icon;
+    }
+}

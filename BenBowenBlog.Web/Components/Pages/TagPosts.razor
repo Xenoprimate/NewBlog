@@ -1,0 +1,32 @@
+﻿@page "/tags/{Tag}"
+@inject BlogDbContext Db
+@inject NavigationManager Navigation
+
+@if (posts.Count > 0)
+{
+    <PageTitle>#@Tag</PageTitle>
+
+    <MudLink Href="/tags" Typo="Typo.body2" Class="d-inline-block mb-4">&larr; All tags</MudLink>
+
+    <MudText Typo="Typo.h3" HtmlTag="h1" Class="mb-1">#@Tag</MudText>
+    <MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">@(posts.Count == 1 ? "1 post" : $"{posts.Count} posts")</MudText>
+
+    <PostList Posts="posts" />
+}
+
+@code {
+    [Parameter]
+    public string Tag { get; set; } = "";
+
+    private List<PostSummary> posts = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        posts = await Db.Posts.AsNoTracking().Published().Where(p => p.Tags.Contains(Tag)).SelectSummaries().ToListAsync();
+
+        if (posts.Count == 0)
+        {
+            Navigation.NotFound();
+        }
+    }
+}

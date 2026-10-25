@@ -1,0 +1,468 @@
+﻿@page "/admin/posts/new"
+@page "/admin/posts/{Id:int}"
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Npgsql
+@inject IServiceScopeFactory ScopeFactory
+@inject NavigationManager Navigation
+@inject CoverImageStore Covers
+@inject IconCatalog IconCatalog
+@inject ISnackbar Snackbar
+@inject ILogger<EditPost> Logger
+
+<MudInteractiveProviders />
+
+<PageTitle>@(Id is null ? "New post" : "Edit post")</PageTitle>
+
+<AdminNav />
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">@(Id is null ? "New post" : "Edit post")</MudText>
+    @if (savedSlug is not null)
+    {
+        <MudButton Href="@($"/post/{savedSlug}")" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility">View post</MudButton>
+    }
+</MudStack>
+
+@if (notFound)
+{
+    <MudAlert Severity="Severity.Warning">Post not found. <MudLink Href="/admin/posts">Back to all posts</MudLink></MudAlert>
+}
+else if (model is null || editContext is null || categories is null)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (categories.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">Every post needs a category. <MudLink Href="/admin/categories">Create a category first</MudLink>.</MudAlert>
+}
+else
+{
+    <EditForm EditContext="editContext" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+
+        <MudStack Spacing="4">
+            <MudTextField T="string" Label="Title" Value="model.Title" ValueChanged="TitleChanged" For="() => model.Title" />
+
+            <MudTextField T="string" Label="Slug" Value="model.Slug" ValueChanged="SlugChanged" For="() => model.Slug" Class="slug-field" />
+
+            <MudSelect T="int?" Label="Category" @bind-Value="model.CategoryId" For="() => model.CategoryId" AnchorOrigin="Origin.BottomCenter">
+                @foreach (var category in categories)
+                {
+                    <MudSelectItem T="int?" Value="@category.Id">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@IconCatalog.Get(category.Icon)" Size="Size.Small" />
+                            <span>@category.Name</span>
+                        </MudStack>
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            <div>
+                <MudAutocomplete T="int?" Label="Previous post (series)" @bind-Value="model.PreviousPostId" For="() => model.PreviousPostId"
+                                 SearchFunc="SearchPostsAsync" ToStringFunc="PostTitle" Clearable="true" ResetValueOnEmptyText="true"
+                                 CoerceText="true" HelperText="The post this one follows in a series. The next post is set in that post's own editor." />
+                @if (nextPostTitle is not null)
+                {
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">Next post: @nextPostTitle</MudText>
+                }
+            </div>
+
+            <div>
+                <MudTextField T="string" Label="Tags" @bind-Value="model.TagsText" For="() => model.TagsText" Immediate="true"
+                              HelperText="Comma-separated; each becomes a lowercase slug" />
+                <div class="mt-1" data-testid="tag-preview">
+                    <TagChips Tags="Tags.Normalize(model.TagsText)" />
+                </div>
+            </div>
+
+            <MudTextField T="string" Label="Summary" @bind-Value="model.Summary" For="() => model.Summary" Lines="2" Sizing="InputSizing.Auto" />
+
+            <MudTextField T="string" Label="Body (Markdown)" @bind-Value="model.Body" For="() => model.Body" Lines="20" Class="body-field" />
+
+            <MudPaper Outlined="true" Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Cover image</MudText>
+
+                @if (pendingCover is not null)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                        Selected @pendingCover.FileName (@FormatSize(pendingCover.Data.Length)); it's uploaded when you save.
+                    </MudAlert>
+                }
+                else if (coverImage is not null && !removeCover)
+                {
+                    <img class="cover-preview mb-2" src="@CoverImageStore.UrlFor(coverImage)" alt="Current cover image" />
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">No cover image.</MudText>
+                }
+
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudFileUpload T="IBrowserFile" FilesChanged="CoverSelectedAsync" Accept=".jpg,.jpeg,.png,.gif,.webp">
+                        <CustomContent Context="upload">
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Image" OnClick="upload.OpenFilePickerAsync">Choose image</MudButton>
+                        </CustomContent>
+                        <SelectedTemplate Context="file"></SelectedTemplate>
+                    </MudFileUpload>
+                    @if (pendingCover is not null || (coverImage is not null && !removeCover))
+                    {
+                        <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemoveCover">Remove</MudButton>
+                    }
+                </MudStack>
+
+                @if (coverError is not null)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2" role="alert">@coverError</MudText>
+                }
+
+                <MudTextField T="string" Label="Cover alt text" @bind-Value="model.CoverImageAlt" For="() => model.CoverImageAlt" Class="mt-2"
+                              HelperText="Describes the image for screen readers" />
+            </MudPaper>
+
+            <MudSwitch T="bool" @bind-Value="model.IsPublished" Label="Published" Color="Color.Primary" />
+
+            <div>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="saving">Save</MudButton>
+            </div>
+        </MudStack>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private PostEditModel? model;
+    private EditContext? editContext;
+    private ValidationMessageStore? messages;
+    private List<CategoryOption>? categories;
+    private List<PostOption> otherPosts = [];
+    private string? nextPostTitle;
+
+    private bool loaded;
+    private int? loadedId;
+    private bool notFound;
+    private bool slugEdited;
+    private bool saving;
+    private string? savedSlug;
+
+    // The saved cover's blob name, a newly chosen file waiting to be uploaded on save, and whether the saved
+    // cover should be removed on save.
+    private string? coverImage;
+    private PendingCover? pendingCover;
+    private bool removeCover;
+    private string? coverError;
+
+    // Enhanced navigation (e.g. /admin/posts/new -> /admin/posts/5 after creating) can reuse this component
+    // with a new Id, so load whenever the Id changes rather than only once.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loaded && Id == loadedId)
+        {
+            return;
+        }
+
+        loaded = true;
+        loadedId = Id;
+        notFound = false;
+        savedSlug = null;
+        slugEdited = Id is not null;
+        coverImage = null;
+        pendingCover = null;
+        removeCover = false;
+        coverError = null;
+
+        // A fresh scope (and so a fresh DbContext) per operation: a context held for the circuit's lifetime
+        // would go stale and could be used by two operations at once.
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+
+        categories = await db.Categories
+            .AsNoTracking()
+            .OrderBy(c => c.Name)
+            .Select(c => new CategoryOption(c.Id, c.Name, c.Icon))
+            .ToListAsync();
+
+        otherPosts = await db.Posts
+            .AsNoTracking()
+            .Where(p => p.Id != (Id ?? 0))
+            .OrderByDescending(p => p.PublishedAt ?? p.CreatedAt)
+            .Select(p => new PostOption(p.Id, p.Title, p.PublishedAt == null))
+            .ToListAsync();
+
+        nextPostTitle = Id is null
+            ? null
+            : await db.Posts.Where(p => p.PreviousPostId == Id).Select(p => p.Title).FirstOrDefaultAsync();
+
+        if (Id is null)
+        {
+            SetModel(new PostEditModel());
+            return;
+        }
+
+        var post = await db.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == Id);
+
+        if (post is null)
+        {
+            notFound = true;
+            model = null;
+            editContext = null;
+            return;
+        }
+
+        savedSlug = post.Slug;
+        coverImage = post.CoverImage;
+        SetModel(PostEditModel.FromPost(post));
+    }
+
+    private void SetModel(PostEditModel newModel)
+    {
+        model = newModel;
+        editContext = new EditContext(model);
+        messages = new ValidationMessageStore(editContext);
+        editContext.OnFieldChanged += (_, e) =>
+        {
+            if (e.FieldIdentifier.FieldName == nameof(PostEditModel.Slug))
+            {
+                messages.Clear(e.FieldIdentifier);
+            }
+        };
+    }
+
+    private void TitleChanged(string? value)
+    {
+        model!.Title = value ?? "";
+        editContext!.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.Title)));
+
+        // On new posts the slug follows the title until it's edited by hand.
+        if (Id is null && !slugEdited)
+        {
+            model.Slug = Slugs.FromTitle(model.Title);
+            editContext.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.Slug)));
+        }
+    }
+
+    private void SlugChanged(string? value)
+    {
+        model!.Slug = value ?? "";
+        slugEdited = true;
+        editContext!.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.Slug)));
+    }
+
+    private async Task CoverSelectedAsync(IBrowserFile? file)
+    {
+        coverError = null;
+
+        if (file is null)
+        {
+            return;
+        }
+
+        if (file.Size > PostLimits.CoverImageMaxBytes)
+        {
+            coverError = $"That file is {FormatSize(file.Size)}; the limit is {FormatSize(PostLimits.CoverImageMaxBytes)}.";
+            return;
+        }
+
+        using var buffer = new MemoryStream();
+        await using (var stream = file.OpenReadStream(PostLimits.CoverImageMaxBytes))
+        {
+            await stream.CopyToAsync(buffer);
+        }
+
+        var data = buffer.ToArray();
+        var format = CoverImageStore.DetectFormat(data);
+
+        if (format is null)
+        {
+            coverError = "That isn't a JPEG, PNG, GIF or WebP image.";
+            return;
+        }
+
+        pendingCover = new PendingCover(file.Name, data, format);
+    }
+
+    private void RemoveCover()
+    {
+        pendingCover = null;
+        removeCover = coverImage is not null;
+        coverError = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        // A fast double-click can submit twice before the disabled button reaches the browser.
+        if (saving)
+        {
+            return;
+        }
+
+        saving = true;
+        string? uploaded = null;
+
+        try
+        {
+            await using var scope = ScopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+            var currentId = Id ?? 0;
+
+            if (await db.Posts.AnyAsync(p => p.Slug == model!.Slug && p.Id != currentId))
+            {
+                ShowSlugTaken();
+                return;
+            }
+
+            if (await ValidatePreviousPostAsync(db, currentId) is { } previousPostError)
+            {
+                ShowFieldError(nameof(PostEditModel.PreviousPostId), previousPostError);
+                return;
+            }
+
+            // Upload first, so a failed upload changes nothing; a failed save then deletes the upload (finally).
+            if (pendingCover is not null)
+            {
+                uploaded = await Covers.UploadAsync(pendingCover.Data, pendingCover.Format);
+            }
+
+            var newCover = uploaded ?? (removeCover ? null : coverImage);
+            var now = DateTimeOffset.UtcNow;
+            Post post;
+
+            if (Id is null)
+            {
+                post = model!.CreatePost(now);
+                db.Posts.Add(post);
+            }
+            else
+            {
+                var existing = await db.Posts.FindAsync(Id.Value);
+
+                if (existing is null)
+                {
+                    notFound = true;
+                    return;
+                }
+
+                post = existing;
+                model!.ApplyTo(post, now);
+            }
+
+            post.CoverImage = newCover;
+            await db.SaveChangesAsync();
+
+            var replaced = coverImage is not null && coverImage != newCover ? coverImage : null;
+            uploaded = null;
+            coverImage = newCover;
+            pendingCover = null;
+            removeCover = false;
+            savedSlug = post.Slug;
+
+            if (replaced is not null)
+            {
+                await DeleteCoverQuietlyAsync(replaced);
+            }
+
+            Snackbar.Add("Post saved", Severity.Success);
+
+            if (Id is null)
+            {
+                Navigation.NavigateTo($"/admin/posts/{post.Id}", replace: true);
+            }
+        }
+        // The check above can still race with another save; the unique index has the final say.
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } unique)
+        {
+            if (unique.ConstraintName == "IX_Posts_PreviousPostId")
+            {
+                ShowFieldError(nameof(PostEditModel.PreviousPostId), "Another post already follows that post.");
+            }
+            else
+            {
+                ShowSlugTaken();
+            }
+        }
+        finally
+        {
+            if (uploaded is not null)
+            {
+                await DeleteCoverQuietlyAsync(uploaded);
+            }
+
+            saving = false;
+        }
+    }
+
+    // Leftover blobs only waste storage, so a failed delete is logged rather than shown to the user.
+    private async Task DeleteCoverQuietlyAsync(string name)
+    {
+        try
+        {
+            await Covers.DeleteAsync(name);
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning(e, "Couldn't delete cover image {Name}", name);
+        }
+    }
+
+    private void ShowSlugTaken() => ShowFieldError(nameof(PostEditModel.Slug), "Slug already in use.");
+
+    private void ShowFieldError(string fieldName, string message)
+    {
+        var field = editContext!.Field(fieldName);
+        messages!.Clear(field);
+        messages.Add(field, message);
+        editContext.NotifyValidationStateChanged();
+    }
+
+    // A series is a simple chain: no post follows itself, following can't loop back round, and at most one post
+    // follows any given post (also enforced by a unique index).
+    private async Task<string?> ValidatePreviousPostAsync(BlogDbContext db, int currentId)
+    {
+        if (model!.PreviousPostId is not { } previousId)
+        {
+            return null;
+        }
+
+        if (previousId == currentId)
+        {
+            return "A post can't follow itself.";
+        }
+
+        var links = await db.Posts.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PreviousPostId);
+        var visited = new HashSet<int>();
+
+        for (int? cursor = previousId; cursor is { } id && visited.Add(id); cursor = links.GetValueOrDefault(id))
+        {
+            if (id == currentId)
+            {
+                return "That would make the series loop back to this post.";
+            }
+        }
+
+        var follower = await db.Posts
+            .Where(p => p.PreviousPostId == previousId && p.Id != currentId)
+            .Select(p => p.Title)
+            .FirstOrDefaultAsync();
+
+        return follower is null ? null : $"\u201c{follower}\u201d already follows that post.";
+    }
+
+    private Task<IEnumerable<int?>> SearchPostsAsync(string? text, CancellationToken cancellationToken) =>
+        Task.FromResult(otherPosts
+            .Where(p => string.IsNullOrWhiteSpace(text) || p.Title.Contains(text.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(p => (int?)p.Id));
+
+    private string? PostTitle(int? id) =>
+        otherPosts.FirstOrDefault(p => p.Id == id) is { } post ? post.IsDraft ? $"{post.Title} (draft)" : post.Title : null;
+
+    private static string FormatSize(long bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024.0):0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
+
+    private record CategoryOption(int Id, string Name, string Icon);
+
+    private record PostOption(int Id, string Title, bool IsDraft);
+
+    private record PendingCover(string FileName, byte[] Data, ImageFormat Format);
+}

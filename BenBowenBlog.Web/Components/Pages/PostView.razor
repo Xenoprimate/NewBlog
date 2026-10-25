@@ -1,0 +1,107 @@
+﻿@page "/post/{Slug}"
+@inject BlogDbContext Db
+@inject NavigationManager Navigation
+
+@if (post is not null && rendered is not null && recommendations is not null)
+{
+    <PageTitle>@post.Title</PageTitle>
+
+    @if (post.Summary is not null)
+    {
+        <HeadContent>
+            <meta name="description" content="@post.Summary" />
+        </HeadContent>
+    }
+
+    @* At 1440px and up the sidebar (cover, contents, recommendations) sits on the left. Below that it's hidden and the
+       article shows its own cover on top and the recommendations at the bottom instead (see .post-page in app.css). *@
+    <div class="post-page" id="post-top">
+        <aside class="post-sidebar">
+            @if (post.CoverImage is not null)
+            {
+                <img class="post-sidebar-cover" src="@CoverImageStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
+            }
+            <div class="post-sidebar-sticky">
+                <TableOfContents Entries="rendered.TableOfContents" PagePath="@($"/post/{post.Slug}")" />
+                <RecommendedPosts Set="recommendations" />
+            </div>
+        </aside>
+
+        <div class="post-main">
+            @if (post.PublishedAt is null)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-4">Draft: not published.</MudAlert>
+            }
+
+            <article>
+                @if (post.CoverImage is not null)
+                {
+                    <img class="post-cover post-cover-inline" src="@CoverImageStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
+                }
+
+                <MudText Typo="Typo.h3" HtmlTag="h1" Class="mb-2">@post.Title</MudText>
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="1" Class="mb-6">
+                    <CategoryLabel Name="@post.Category!.Name" Icon="@post.Category.Icon" />
+                    @if (post.PublishedAt is { } published)
+                    {
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary mx-2">
+                            <time datetime="@published.ToString("O")">@published.ToString("d MMMM yyyy")</time>
+                        </MudText>
+                    }
+                    <TagChips Tags="post.Tags" />
+                </MudStack>
+
+                <div class="post-body">
+                    @rendered.Html
+                </div>
+            </article>
+
+            @if (isAdmin)
+            {
+                <MudButton Href="@($"/admin/posts/{post.Id}")" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Class="mt-6">Edit</MudButton>
+            }
+
+            @if (!recommendations.IsEmpty)
+            {
+                <div class="post-bottom-recommendations">
+                    <MudDivider Class="my-8" />
+                    <RecommendedPosts Set="recommendations" />
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = "";
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private Post? post;
+    private RenderedPost? rendered;
+    private PostRecommendationSet? recommendations;
+    private bool isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isAdmin = AuthenticationState is not null && (await AuthenticationState).User.Identity?.IsAuthenticated == true;
+
+        // Drafts are only visible to an unlocked admin (as a preview); everyone else gets a 404.
+        post = await Db.Posts
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Slug == Slug && (isAdmin || p.PublishedAt != null));
+
+        if (post is null)
+        {
+            Navigation.NotFound();
+            return;
+        }
+
+        rendered = PostMarkdown.Render(post.Body);
+        recommendations = await PostRecommender.GetAsync(Db, post);
+    }
+}

@@ -1,0 +1,9 @@
+﻿@foreach (var tag in Tags)
+{
+    <MudChip T="string" Href="@TagUrls.For(tag)" Size="Size.Small" Variant="Variant.Text">#@tag</MudChip>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<string> Tags { get; set; } = [];
+}

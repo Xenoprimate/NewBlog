@@ -1,0 +1,574 @@
+h1:focus {
+    outline: none;
+}
+
+/* Hidden on screen but still read by screen readers (and seen by search engines). */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.validation-message {
+    color: var(--mud-palette-error);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* Plain inputs for the static (non-interactive) unlock form, styled to sit alongside MudBlazor. */
+.admin-label {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.admin-input, .text-input {
+    display: block;
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    font: inherit;
+    color: var(--mud-palette-text-primary);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-inputs);
+    border-radius: var(--mud-default-borderradius);
+}
+
+    .admin-input:focus, .text-input:focus {
+        outline: 2px solid var(--mud-palette-primary);
+        outline-offset: -1px;
+    }
+
+/* Home is 1.5x wider than the other pages (MainLayout's container is MaxWidth.Medium, 960px). */
+.mud-container:has(> .home-page) {
+    max-width: 1440px;
+}
+
+/* Two cards per row only once the window is wide enough for Home's container to reach its full 1440px, so cards
+   are never squeezed below their full width; narrower windows get one card per row. */
+@media (min-width: 1440px) {
+    .home-page .home-card {
+        flex-basis: 50%;
+        max-width: 50%;
+    }
+}
+
+/* Top bar menu (Components/Layout/TopNav.razor). */
+.top-nav-divider {
+    width: 1px;
+    height: 1.5rem;
+    margin: 0 0.5rem;
+    background: currentColor;
+    opacity: 0.4;
+}
+
+.mobile-menu {
+    position: relative;
+}
+
+    .mobile-menu > summary {
+        list-style: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 50%;
+    }
+
+        .mobile-menu > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .mobile-menu > summary:hover, .mobile-menu[open] > summary {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+.mobile-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    min-width: 13rem;
+    padding: 0.5rem 0;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+    border-radius: var(--mud-default-borderradius);
+    z-index: calc(var(--mud-zindex-appbar) + 1);
+}
+
+.mobile-menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+    .mobile-menu-link:hover {
+        background: var(--mud-palette-action-default-hover);
+    }
+
+.mobile-menu-social {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--mud-palette-lines-default);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Categories page: the category link covers the whole card; recent-post links sit above it. */
+.category-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+    .category-card:hover {
+        border-color: var(--mud-palette-primary);
+        box-shadow: var(--mud-elevation-4);
+    }
+
+    .category-card:has(.stretched-link:focus-visible) {
+        outline: 2px solid var(--mud-palette-primary);
+        outline-offset: 2px;
+    }
+
+.stretched-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+    .stretched-link:focus-visible {
+        outline: none;
+    }
+
+    .stretched-link::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+    }
+
+.category-recent {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .category-recent li + li {
+        margin-top: 0.875rem;
+    }
+
+.category-recent-title {
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+    color: var(--mud-palette-text-primary);
+    text-decoration: none;
+}
+
+    .category-recent-title:hover {
+        color: var(--mud-palette-primary);
+        text-decoration: underline;
+    }
+
+/* Compact post list (Components/Shared/PostList.razor). */
+.post-row {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.post-row-thumb {
+    flex: 0 0 9rem;
+}
+
+    .post-row-thumb img {
+        display: block;
+        width: 9rem;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: var(--mud-default-borderradius);
+    }
+
+.post-row-body {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 599.98px) {
+    .post-row {
+        flex-direction: column;
+    }
+
+    .post-row-thumb {
+        flex-basis: auto;
+    }
+
+        .post-row-thumb img {
+            width: 100%;
+        }
+}
+
+/* Tags page. */
+.tag-search {
+    max-width: 28rem;
+}
+
+.tag-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.75rem;
+}
+
+.tag-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 999px;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+    text-decoration: none;
+}
+
+    .tag-pill[hidden] {
+        display: none;
+    }
+
+    .tag-pill:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+    }
+
+.tag-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-count {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: var(--mud-palette-action-default-hover);
+}
+
+.icon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-height: 18rem;
+    overflow-y: auto;
+    padding: 0.25rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: var(--mud-default-borderradius);
+}
+
+.cover-preview {
+    display: block;
+    max-width: 100%;
+    max-height: 16rem;
+    border-radius: var(--mud-default-borderradius);
+}
+
+.body-field textarea, .slug-field input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.post-cover {
+    display: block;
+    width: 100%;
+    max-height: 26rem;
+    object-fit: cover;
+    border-radius: var(--mud-default-borderradius);
+    margin-bottom: 1.5rem;
+}
+
+/* Post page (PostView.razor). At 1440px and up a left sidebar holds the cover, table of contents and recommendations;
+   below that the sidebar is hidden and the article shows its own cover and bottom recommendations instead. */
+.post-sidebar {
+    display: none;
+}
+
+.post-sidebar-cover {
+    display: block;
+    width: 100%;
+    border-radius: var(--mud-default-borderradius);
+    margin-bottom: 1.5rem;
+}
+
+.post-sidebar-sticky {
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1440px) {
+    .mud-container:has(> .post-page) {
+        max-width: 1440px;
+    }
+
+    .post-page {
+        display: grid;
+        grid-template-columns: 20rem minmax(0, 1fr);
+        gap: 3rem;
+        align-items: start;
+    }
+
+    .post-sidebar {
+        display: block;
+        align-self: stretch;
+    }
+
+    .post-cover-inline, .post-bottom-recommendations {
+        display: none;
+    }
+}
+
+#post-top {
+    scroll-margin-top: 80px;
+}
+
+.toc-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.toc-top {
+    font-size: 0.875rem;
+    color: var(--mud-palette-primary);
+    text-decoration: none;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-left: 2px solid var(--mud-palette-lines-default);
+}
+
+    .toc-list a {
+        display: block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.4;
+        color: var(--mud-palette-text-secondary);
+        text-decoration: none;
+    }
+
+        .toc-list a:hover {
+            color: var(--mud-palette-primary);
+        }
+
+    .toc-list .toc-level-1 a {
+        padding-left: 1.5rem;
+    }
+
+    .toc-list .toc-level-2 a {
+        padding-left: 2.25rem;
+    }
+
+.series-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.series-link {
+    display: flex;
+    flex-direction: column;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: var(--mud-default-borderradius);
+    color: var(--mud-palette-text-primary);
+    text-decoration: none;
+}
+
+    .series-link:hover {
+        border-color: var(--mud-palette-primary);
+    }
+
+.series-link-next {
+    text-align: right;
+}
+
+.series-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mud-palette-primary);
+}
+
+.series-title {
+    font-weight: 500;
+}
+
+.recommended-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .recommended-list li + li {
+        margin-top: 0.75rem;
+    }
+
+    .recommended-list a {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        color: var(--mud-palette-text-primary);
+        text-decoration: none;
+    }
+
+        .recommended-list a:hover .recommended-title {
+            color: var(--mud-palette-primary);
+        }
+
+.recommended-thumb {
+    flex: 0 0 4.5rem;
+    width: 4.5rem;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.recommended-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.recommended-title {
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.recommended-date {
+    font-size: 0.75rem;
+}
+
+/* Rendered Markdown. MudBlazor resets element margins, so the post body restores readable typography. */
+.post-body {
+    font-size: 1.0625rem;
+    line-height: 1.7;
+}
+
+    .post-body > * + * {
+        margin-top: 1rem;
+    }
+
+    .post-body h1, .post-body h2, .post-body h3, .post-body h4 {
+        scroll-margin-top: 80px;
+        line-height: 1.3;
+        font-weight: 500;
+        margin-top: 2rem;
+    }
+
+    .post-body h1 { font-size: 2rem; }
+    .post-body h2 { font-size: 1.6rem; }
+    .post-body h3 { font-size: 1.3rem; }
+    .post-body h4 { font-size: 1.1rem; }
+
+    .post-body ul, .post-body ol {
+        padding-left: 1.5rem;
+    }
+
+    .post-body a {
+        color: var(--mud-palette-primary);
+    }
+
+    .post-body img {
+        max-width: 100%;
+    }
+
+    .post-body blockquote {
+        border-left: 4px solid var(--mud-palette-lines-default);
+        padding-left: 1rem;
+        color: var(--mud-palette-text-secondary);
+    }
+
+    .post-body code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9em;
+        background: var(--mud-palette-background-gray);
+        padding: 0.1em 0.3em;
+        border-radius: 4px;
+    }
+
+    .post-body pre {
+        background: var(--mud-palette-background-gray);
+        padding: 1rem;
+        border-radius: var(--mud-default-borderradius);
+        overflow-x: auto;
+    }
+
+        .post-body pre code {
+            background: none;
+            padding: 0;
+        }
+
+    .post-body table {
+        border-collapse: collapse;
+    }
+
+    .post-body th, .post-body td {
+        border: 1px solid var(--mud-palette-lines-default);
+        padding: 0.4rem 0.75rem;
+    }
+
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+.blazor-error-boundary {
+    background: #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }

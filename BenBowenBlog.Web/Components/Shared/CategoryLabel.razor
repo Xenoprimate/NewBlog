@@ -1,0 +1,11 @@
+﻿@inject IconCatalog IconCatalog
+
+<MudChip T="string" Href="@CategoryUrls.For(Name)" Icon="@IconCatalog.Get(Icon)" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@Name</MudChip>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = "";
+}
