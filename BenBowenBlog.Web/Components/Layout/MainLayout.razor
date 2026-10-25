@@ -1,18 +1,22 @@
 ﻿@inherits LayoutComponentBase
+@using BenBowenBlog.Web.Theming
 
-<MudThemeProvider />
+@* The layout renders statically, so the theme is chosen per request from the reader's cookies (see ThemePreferences)
+   rather than switched live. *@
+<MudThemeProvider Theme="@selection.Theme.Theme" IsDarkMode="@selection.IsDarkMode" />
 
-<MudLayout>
+<MudLayout Class="@($"site-layout pattern-{selection.Pattern.ToString().ToLowerInvariant()}")">
     <MudAppBar Elevation="1">
         <MudLink Href="/" Color="Color.Inherit" Typo="Typo.h6" Underline="Underline.None">BenBowenBlog</MudLink>
         <MudSpacer />
         <TopNav />
     </MudAppBar>
 
-    <MudMainContent>
+    <MudMainContent Class="site-main">
         <MudContainer MaxWidth="MaxWidth.Medium" Class="py-6">
             @Body
         </MudContainer>
+        <SiteFooter Selection="selection" />
     </MudMainContent>
 </MudLayout>
 
@@ -21,3 +25,12 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private ThemeSelection selection = ThemePreferences.Resolve(null);
+
+    protected override void OnParametersSet() => selection = ThemePreferences.Resolve(HttpContext);
+}

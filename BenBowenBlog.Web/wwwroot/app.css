@@ -59,6 +59,146 @@ h1:focus {
     }
 }
 
+/* Background pattern, chosen in the footer (MainLayout adds pattern-{name}; each palette has a default). It's drawn on a
+   fixed layer behind everything, in the theme's text colour at low opacity, so it suits every palette in light and dark
+   mode; cards keep solid backgrounds. pattern-none simply has no rule.
+   isolation keeps the negative z-index layer above the page background rather than behind it. */
+.site-layout {
+    --pattern: color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent);
+    position: relative;
+    isolation: isolate;
+}
+
+    .site-layout::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+/* Soft waves: an SVG used as a mask, so the colour still comes from the theme. */
+.pattern-waves::before {
+    background: var(--pattern);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='28'%3E%3Cpath d='M0 14 C20 6 40 6 60 14 S100 22 120 14' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E") repeat 0 0 / 120px 28px;
+}
+
+/* Staggered flecks. */
+.pattern-flecks::before {
+    background-image:
+        radial-gradient(var(--pattern) 1.2px, transparent 1.6px),
+        radial-gradient(var(--pattern) 1.2px, transparent 1.6px);
+    background-size: 22px 22px;
+    background-position: 0 0, 11px 11px;
+}
+
+/* Fine diagonal lines. */
+.pattern-lines::before {
+    background-image: repeating-linear-gradient(135deg, var(--pattern) 0 1px, transparent 1px 14px);
+}
+
+/* Graph-paper grid. */
+.pattern-grid::before {
+    background-image:
+        linear-gradient(var(--pattern) 1px, transparent 1px),
+        linear-gradient(90deg, var(--pattern) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+/* Footer pinned to the bottom of short pages: the main content area is a full-height flex column. */
+.site-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+    .site-main > .mud-container:first-child {
+        flex: 1 0 auto;
+        width: 100%;
+    }
+
+.site-footer {
+    border-top: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.875rem;
+}
+
+.site-footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+}
+
+.site-footer-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+    .site-footer-meta a {
+        color: inherit;
+    }
+
+        .site-footer-meta a:hover {
+            color: var(--mud-palette-primary);
+        }
+
+.theme-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.theme-swatches {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.theme-swatch {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 1px solid var(--mud-palette-lines-default);
+    transform: rotate(-90deg);
+}
+
+    .theme-swatch.active {
+        outline: 2px solid var(--mud-palette-primary);
+        outline-offset: 2px;
+    }
+
+.theme-modes {
+    display: flex;
+    border: 1px solid var(--mud-palette-lines-inputs);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.theme-mode {
+    padding: 0.2rem 0.75rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+    .theme-mode + .theme-mode {
+        border-left: 1px solid var(--mud-palette-lines-inputs);
+    }
+
+    .theme-mode:hover {
+        color: var(--mud-palette-primary);
+    }
+
+    .theme-mode.active {
+        background: var(--mud-palette-primary);
+        color: var(--mud-palette-primary-text);
+    }
+
 /* Top bar menu (Components/Layout/TopNav.razor). */
 .top-nav-divider {
     width: 1px;

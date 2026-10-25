@@ -3,6 +3,7 @@ using BenBowenBlog.Web.Admin;
 using BenBowenBlog.Web.Feed;
 using BenBowenBlog.Web.Media;
 using BenBowenBlog.Web.Site;
+using BenBowenBlog.Web.Theming;
 using BenBowenBlog.Web.Components;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -70,6 +71,8 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 
 app.UseHttpsRedirection();
 
+app.UseColorSchemeClientHint();
+
 // Keep admin pages out of search engines.
 app.Use(async (context, next) =>
 {
@@ -94,6 +97,7 @@ app.MapStaticAssets();
 
 app.MapMediaEndpoints();
 app.MapFeedEndpoints();
+app.MapThemeEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

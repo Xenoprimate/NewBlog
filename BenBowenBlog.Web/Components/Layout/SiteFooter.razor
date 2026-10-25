@@ -1,0 +1,61 @@
+﻿@using BenBowenBlog.Web.Theming
+@inject NavigationManager Navigation
+
+@* Theme choices are plain links to /theme/... endpoints that set a cookie and redirect back. data-enhance-nav="false"
+   forces a full page load so the new theme's styles are applied. *@
+<footer class="site-footer">
+    <MudContainer MaxWidth="MaxWidth.Large" Class="site-footer-inner">
+        <div class="site-footer-meta">
+            &copy; Ben Bowen @DateTime.UtcNow.Year
+            <span aria-hidden="true">&middot;</span>
+            <a href="/about">About</a>
+            <span aria-hidden="true">&middot;</span>
+            <a href="/feed.xml">Subscribe</a>
+        </div>
+
+        <div class="theme-picker">
+            <span class="theme-picker-label">Theme</span>
+
+            <div class="theme-swatches" role="group" aria-label="Colour theme">
+                @foreach (var theme in BlogThemes.All)
+                {
+                    var active = theme.Key == Selection.Theme.Key;
+                    <a class="theme-swatch @(active ? "active" : "")" href="@ThemeUrl("palette", theme.Key)" rel="nofollow" data-enhance-nav="false"
+                       style="@SwatchStyle(theme)" title="@theme.Name" aria-label="@($"{theme.Name} theme")" aria-current="@(active ? "true" : null)"></a>
+                }
+            </div>
+
+            <div class="theme-modes" role="group" aria-label="Light or dark mode">
+                @foreach (var mode in Enum.GetValues<ThemeMode>().OrderBy(m => m == ThemeMode.System ? 2 : (int)m))
+                {
+                    var active = mode == Selection.Mode;
+                    <a class="theme-mode @(active ? "active" : "")" href="@ThemeUrl("mode", mode.ToString().ToLowerInvariant())" rel="nofollow"
+                       data-enhance-nav="false" aria-current="@(active ? "true" : null)">@mode</a>
+                }
+            </div>
+
+            <div class="theme-modes" role="group" aria-label="Background pattern">
+                @foreach (var pattern in Enum.GetValues<BackgroundPattern>())
+                {
+                    var active = pattern == Selection.Pattern;
+                    <a class="theme-mode @(active ? "active" : "")" href="@ThemeUrl("pattern", pattern.ToString().ToLowerInvariant())" rel="nofollow"
+                       data-enhance-nav="false" aria-current="@(active ? "true" : null)">@pattern</a>
+                }
+            </div>
+        </div>
+    </MudContainer>
+</footer>
+
+@code {
+    [Parameter, EditorRequired]
+    public ThemeSelection Selection { get; set; } = default!;
+
+    private string ThemeUrl(string kind, string value)
+    {
+        var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        return $"/theme/{kind}/{value}?returnUrl={Uri.EscapeDataString(returnUrl)}";
+    }
+
+    private static string SwatchStyle(BlogTheme theme) =>
+        $"background: conic-gradient({theme.Swatches[0]} 0 33.3%, {theme.Swatches[1]} 0 66.6%, {theme.Swatches[2]} 0);";
+}
