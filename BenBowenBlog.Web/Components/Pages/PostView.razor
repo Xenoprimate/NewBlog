@@ -1,6 +1,7 @@
 ﻿@page "/post/{Slug}"
 @inject BlogDbContext Db
 @inject NavigationManager Navigation
+@inject BenBowenBlog.Web.Metrics.PostViewRecorder ViewRecorder
 
 @if (post is not null && rendered is not null && recommendations is not null)
 {
@@ -19,7 +20,7 @@
         <aside class="post-sidebar">
             @if (post.CoverImage is not null)
             {
-                <img class="post-sidebar-cover" src="@CoverImageStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
+                <img class="post-sidebar-cover" src="@MediaStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
             }
             <div class="post-sidebar-sticky">
                 <TableOfContents Entries="rendered.TableOfContents" PagePath="@($"/post/{post.Slug}")" />
@@ -36,7 +37,7 @@
             <article>
                 @if (post.CoverImage is not null)
                 {
-                    <img class="post-cover post-cover-inline" src="@CoverImageStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
+                    <img class="post-cover post-cover-inline" src="@MediaStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
                 }
 
                 <MudText Typo="Typo.h3" HtmlTag="h1" Class="mb-2">@post.Title</MudText>
@@ -51,6 +52,22 @@
                     }
                     <TagChips Tags="post.Tags" />
                 </MudStack>
+
+                @if (post.Errata.Count > 0)
+                {
+                    <aside class="errata" aria-labelledby="errata-heading">
+                        <MudText Typo="Typo.h6" HtmlTag="h2" id="errata-heading" Class="mb-2">Errata</MudText>
+                        <ul>
+                            @foreach (var erratum in post.Errata.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id))
+                            {
+                                <li>
+                                    <time class="errata-date" datetime="@erratum.Date.ToString("yyyy-MM-dd")">@erratum.Date.ToString("d MMMM yyyy")</time>
+                                    <div class="errata-text">@PostMarkdown.ToHtml(erratum.Text)</div>
+                                </li>
+                            }
+                        </ul>
+                    </aside>
+                }
 
                 <div class="post-body">
                     @rendered.Html
@@ -80,6 +97,9 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationState { get; set; }
 
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
     private Post? post;
     private RenderedPost? rendered;
     private PostRecommendationSet? recommendations;
@@ -93,6 +113,7 @@
         post = await Db.Posts
             .AsNoTracking()
             .Include(p => p.Category)
+            .Include(p => p.Errata)
             .FirstOrDefaultAsync(p => p.Slug == Slug && (isAdmin || p.PublishedAt != null));
 
         if (post is null)
@@ -103,5 +124,11 @@
 
         rendered = PostMarkdown.Render(post.Body);
         recommendations = await PostRecommender.GetAsync(Db, post);
+
+        // Private metrics: only published posts; the recorder also skips admins, bots and prefetches.
+        if (post.PublishedAt is not null && HttpContext is not null)
+        {
+            ViewRecorder.Record(HttpContext, post.Id);
+        }
     }
 }

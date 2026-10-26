@@ -49,6 +49,32 @@ namespace BenBowenBlog.Data.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("BenBowenBlog.Data.Erratum", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("Errata");
+                });
+
             modelBuilder.Entity("BenBowenBlog.Data.Post", b =>
                 {
                     b.Property<int>("Id")
@@ -121,6 +147,50 @@ namespace BenBowenBlog.Data.Migrations
                     b.ToTable("Posts");
                 });
 
+            modelBuilder.Entity("BenBowenBlog.Data.PostVisit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Views")
+                        .HasColumnType("integer");
+
+                    b.Property<byte[]>("VisitorHash")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId", "Date", "VisitorHash")
+                        .IsUnique();
+
+                    b.ToTable("PostVisits");
+                });
+
+            modelBuilder.Entity("BenBowenBlog.Data.Erratum", b =>
+                {
+                    b.HasOne("BenBowenBlog.Data.Post", null)
+                        .WithMany("Errata")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BenBowenBlog.Data.Post", b =>
                 {
                     b.HasOne("BenBowenBlog.Data.Category", "Category")
@@ -139,9 +209,23 @@ namespace BenBowenBlog.Data.Migrations
                     b.Navigation("PreviousPost");
                 });
 
+            modelBuilder.Entity("BenBowenBlog.Data.PostVisit", b =>
+                {
+                    b.HasOne("BenBowenBlog.Data.Post", null)
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BenBowenBlog.Data.Category", b =>
                 {
                     b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("BenBowenBlog.Data.Post", b =>
+                {
+                    b.Navigation("Errata");
                 });
 #pragma warning restore 612, 618
         }

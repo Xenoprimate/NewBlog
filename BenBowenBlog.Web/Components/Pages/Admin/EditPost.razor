@@ -5,10 +5,12 @@
 @using Npgsql
 @inject IServiceScopeFactory ScopeFactory
 @inject NavigationManager Navigation
-@inject CoverImageStore Covers
+@inject MediaStore Store
 @inject IconCatalog IconCatalog
 @inject ISnackbar Snackbar
 @inject ILogger<EditPost> Logger
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <MudInteractiveProviders />
 
@@ -72,13 +74,80 @@ else
                 <MudTextField T="string" Label="Tags" @bind-Value="model.TagsText" For="() => model.TagsText" Immediate="true"
                               HelperText="Comma-separated; each becomes a lowercase slug" />
                 <div class="mt-1" data-testid="tag-preview">
-                    <TagChips Tags="Tags.Normalize(model.TagsText)" />
+                    <TagChips Tags="Tags.Normalize(model.TagsText)" OnRemove="RemoveTag" />
                 </div>
             </div>
 
             <MudTextField T="string" Label="Summary" @bind-Value="model.Summary" For="() => model.Summary" Lines="2" Sizing="InputSizing.Auto" />
 
-            <MudTextField T="string" Label="Body (Markdown)" @bind-Value="model.Body" For="() => model.Body" Lines="20" Class="body-field" />
+            @* Only the active tab renders, so the preview is rendered when you switch to it; leaving the text box commits
+               its value first, so it always reflects what you just typed. *@
+            <MudTabs Outlined="true" Rounded="true" Border="true" TabPanelsClass="pa-4" ApplyEffectsToContainer="true"
+                     KeepPanelsAlive="true" @bind-ActivePanelIndex="editorTab">
+                <Header Context="tabs">
+                    @* Formatting shortcuts: they insert Markdown at the cursor (or around the selection) in the Write tab. *@
+                    <div class="markdown-toolbar" role="toolbar" aria-label="Markdown formatting">
+                        @foreach (var tool in MarkdownTools)
+                        {
+                            if (tool.Action is null)
+                            {
+                                <span class="markdown-toolbar-divider" aria-hidden="true"></span>
+                            }
+                            else if (tool.Action == "image")
+                            {
+                                @* The image button lists the most recently added images from the media library, plus a
+                                   blank template; the list is loaded each time it opens, so new uploads appear. *@
+                                <MudMenu Icon="@tool.Icon" Size="Size.Small" Dense="true" Disabled="editorTab != 0" AriaLabel="@tool.Label"
+                                         title="@tool.Label" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                                         OpenChanged="ImageMenuOpenChangedAsync" ListClass="image-menu">
+                                    @if (recentImages is null)
+                                    {
+                                        <MudMenuItem Disabled="true">Loading...</MudMenuItem>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var image in recentImages)
+                                        {
+                                            <MudMenuItem OnClick="() => InsertImageAsync(image)">
+                                                <span class="image-menu-item">
+                                                    <img src="@image.Url" alt="" />
+                                                    <span class="image-menu-name">@image.DisplayName</span>
+                                                </span>
+                                            </MudMenuItem>
+                                        }
+                                        <MudMenuItem OnClick="@(() => ApplyMarkdownAsync("image"))" Icon="@Icons.Material.Filled.AddPhotoAlternate">
+                                            Blank image
+                                        </MudMenuItem>
+                                    }
+                                </MudMenu>
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@tool.Icon" Size="Size.Small" title="@tool.Label" aria-label="@tool.Label"
+                                               Disabled="editorTab != 0" OnClick="() => ApplyMarkdownAsync(tool.Action)" />
+                            }
+                        }
+                    </div>
+                </Header>
+                <ChildContent>
+                <MudTabPanel Text="Write" Icon="@Icons.Material.Filled.Edit">
+                    <div @ref="bodyEditor">
+                        <MudTextField T="string" Label="Body (Markdown)" @bind-Value="model.Body" For="() => model.Body" Lines="20" Class="body-field" />
+                    </div>
+                </MudTabPanel>
+                <MudTabPanel Text="Preview" Icon="@Icons.Material.Filled.Visibility">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">Preview of the post body. Cover, title and sidebar aren't shown.</MudText>
+                    @if (string.IsNullOrWhiteSpace(model.Body))
+                    {
+                        <MudText Class="mud-text-secondary">Nothing to preview yet.</MudText>
+                    }
+                    else
+                    {
+                        <div class="post-body editor-preview">@PostMarkdown.Render(model.Body).Html</div>
+                    }
+                </MudTabPanel>
+                </ChildContent>
+            </MudTabs>
 
             <MudPaper Outlined="true" Class="pa-4">
                 <MudText Typo="Typo.subtitle1" Class="mb-2">Cover image</MudText>
@@ -91,7 +160,7 @@ else
                 }
                 else if (coverImage is not null && !removeCover)
                 {
-                    <img class="cover-preview mb-2" src="@CoverImageStore.UrlFor(coverImage)" alt="Current cover image" />
+                    <img class="cover-preview mb-2" src="@MediaStore.UrlFor(coverImage)" alt="Current cover image" />
                 }
                 else
                 {
@@ -118,6 +187,30 @@ else
 
                 <MudTextField T="string" Label="Cover alt text" @bind-Value="model.CoverImageAlt" For="() => model.CoverImageAlt" Class="mt-2"
                               HelperText="Describes the image for screen readers" />
+            </MudPaper>
+
+            <MudPaper Outlined="true" Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Errata</MudText>
+
+                @if (model.Errata.Count == 0)
+                {
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">No errata.</MudText>
+                }
+
+                @foreach (var erratum in model.Errata)
+                {
+                    <div class="erratum-row">
+                        <MudDatePicker @bind-Date="erratum.Date" Label="Date" DateFormat="d MMM yyyy" Class="erratum-date" />
+                        <MudTextField T="string" @bind-Value="erratum.Text" Label="Note" HelperText="Markdown supported" Lines="2" Class="flex-grow-1" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Remove erratum" title="Remove erratum"
+                                       OnClick="() => model.Errata.Remove(erratum)" />
+                    </div>
+                }
+
+                <ValidationMessage For="() => model.Errata" />
+
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" Class="mt-1"
+                           OnClick="() => model.Errata.Add(new ErratumEditModel { Date = DateTime.Today })">Add erratum</MudButton>
             </MudPaper>
 
             <MudSwitch T="bool" @bind-Value="model.IsPublished" Label="Published" Color="Color.Primary" />
@@ -153,6 +246,11 @@ else
     private PendingCover? pendingCover;
     private bool removeCover;
     private string? coverError;
+
+    private int editorTab;
+    private ElementReference bodyEditor;
+    private IJSObjectReference? markdownToolbar;
+    private List<MediaItem>? recentImages;
 
     // Enhanced navigation (e.g. /admin/posts/new -> /admin/posts/5 after creating) can reuse this component
     // with a new Id, so load whenever the Id changes rather than only once.
@@ -201,7 +299,7 @@ else
             return;
         }
 
-        var post = await db.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == Id);
+        var post = await db.Posts.AsNoTracking().Include(p => p.Errata).FirstOrDefaultAsync(p => p.Id == Id);
 
         if (post is null)
         {
@@ -272,7 +370,7 @@ else
         }
 
         var data = buffer.ToArray();
-        var format = CoverImageStore.DetectFormat(data);
+        var format = MediaStore.DetectFormat(data);
 
         if (format is null)
         {
@@ -322,7 +420,7 @@ else
             // Upload first, so a failed upload changes nothing; a failed save then deletes the upload (finally).
             if (pendingCover is not null)
             {
-                uploaded = await Covers.UploadAsync(pendingCover.Data, pendingCover.Format);
+                uploaded = await Store.UploadAsync(pendingCover.Data, pendingCover.Format, pendingCover.FileName);
             }
 
             var newCover = uploaded ?? (removeCover ? null : coverImage);
@@ -336,7 +434,8 @@ else
             }
             else
             {
-                var existing = await db.Posts.FindAsync(Id.Value);
+                // Errata are loaded so ApplyTo can replace them.
+                var existing = await db.Posts.Include(p => p.Errata).FirstOrDefaultAsync(p => p.Id == Id.Value);
 
                 if (existing is null)
                 {
@@ -398,7 +497,7 @@ else
     {
         try
         {
-            await Covers.DeleteAsync(name);
+            await Store.DeleteAsync(name);
         }
         catch (Exception e)
         {
@@ -459,6 +558,80 @@ else
 
     private static string FormatSize(long bytes) =>
         bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024.0):0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
+
+    private void RemoveTag(string tag)
+    {
+        model!.TagsText = string.Join(", ", Tags.Normalize(model.TagsText).Where(t => t != tag));
+        editContext!.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.TagsText)));
+    }
+
+    private async Task ApplyMarkdownAsync(string action)
+    {
+        var toolbar = await GetMarkdownToolbarAsync();
+        await toolbar.InvokeVoidAsync("apply", bodyEditor, action);
+    }
+
+    private const int RecentImageCount = 5;
+
+    private async Task ImageMenuOpenChangedAsync(bool open)
+    {
+        if (open)
+        {
+            recentImages = null;
+            recentImages = (await Store.ListAsync()).Take(RecentImageCount).ToList();
+        }
+    }
+
+    private async Task InsertImageAsync(MediaItem image)
+    {
+        // Square brackets would end the alt text early, so they're dropped.
+        var alt = Path.GetFileNameWithoutExtension(image.DisplayName).Replace("[", "").Replace("]", "");
+        var toolbar = await GetMarkdownToolbarAsync();
+        await toolbar.InvokeVoidAsync("insertImage", bodyEditor, alt, image.Url);
+    }
+
+    // Imported on first use only; the absolute path matters because a relative one would resolve against Blazor's own
+    // script under /_framework.
+    private async Task<IJSObjectReference> GetMarkdownToolbarAsync() =>
+        markdownToolbar ??= await JS.InvokeAsync<IJSObjectReference>("import", "/" + Assets["js/markdown-toolbar.js"]);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (markdownToolbar is not null)
+        {
+            try
+            {
+                await markdownToolbar.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is already gone (e.g. the tab was closed); nothing to clean up.
+            }
+        }
+    }
+
+    // A null action draws a divider between groups.
+    private static readonly MarkdownTool[] MarkdownTools =
+    [
+        new("Bold", Icons.Material.Filled.FormatBold, "bold"),
+        new("Italic", Icons.Material.Filled.FormatItalic, "italic"),
+        new("Heading", Icons.Material.Filled.Title, "heading"),
+        new("", "", null),
+        new("Link", Icons.Material.Filled.Link, "link"),
+        new("Image", Icons.Material.Filled.Image, "image"),
+        new("", "", null),
+        new("Inline code", Icons.Material.Filled.Code, "code"),
+        new("Code block", Icons.Material.Filled.DataObject, "codeblock"),
+        new("", "", null),
+        new("Bulleted list", Icons.Material.Filled.FormatListBulleted, "bullets"),
+        new("Numbered list", Icons.Material.Filled.FormatListNumbered, "numbers"),
+        new("Quote", Icons.Material.Filled.FormatQuote, "quote"),
+        new("Note", Icons.Material.Filled.StickyNote2, "note"),
+        new("Table", Icons.Material.Filled.TableChart, "table"),
+        new("Horizontal rule", Icons.Material.Filled.HorizontalRule, "rule")
+    ];
+
+    private record MarkdownTool(string Label, string Icon, string? Action);
 
     private record CategoryOption(int Id, string Name, string Icon);
 

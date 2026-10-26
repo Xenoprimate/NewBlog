@@ -8,6 +8,10 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
 
     public DbSet<Category> Categories => Set<Category>();
 
+    public DbSet<Erratum> Errata => Set<Erratum>();
+
+    public DbSet<PostVisit> PostVisits => Set<PostVisit>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Post>(post =>
@@ -41,6 +45,31 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
                 .HasForeignKey(p => p.PreviousPostId)
                 .OnDelete(DeleteBehavior.SetNull);
             post.HasIndex(p => p.PreviousPostId).IsUnique();
+
+            // Errata belong to their post: deleting the post deletes them, and removing one from Post.Errata deletes it.
+            post.HasMany(p => p.Errata)
+                .WithOne()
+                .HasForeignKey(e => e.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Erratum>(erratum =>
+        {
+            erratum.Property(e => e.Text).HasMaxLength(ErratumLimits.TextMaxLength);
+        });
+
+        modelBuilder.Entity<PostVisit>(visit =>
+        {
+            visit.HasOne<Post>()
+                .WithMany()
+                .HasForeignKey(v => v.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One row per post, day and visitor: recording a view is an upsert against this index.
+            visit.HasIndex(v => new { v.PostId, v.Date, v.VisitorHash }).IsUnique();
+
+            visit.Property(v => v.VisitorHash).HasMaxLength(PostVisitLimits.VisitorHashLength);
+            visit.Property(v => v.Source).HasMaxLength(PostVisitLimits.SourceMaxLength);
         });
 
         modelBuilder.Entity<Category>(category =>

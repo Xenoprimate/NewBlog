@@ -9,6 +9,7 @@ var blobs = builder.AddAzureStorage("storage")
     .AddBlobs("blobs");
 
 var adminKey = builder.AddParameter("admin-key", secret: true);
+var metricsKey = builder.AddParameter("metrics-key", secret: true);
 
 builder.AddProject<Projects.BenBowenBlog_Web>("webfrontend")
     .WithExternalHttpEndpoints()
@@ -17,6 +18,7 @@ builder.AddProject<Projects.BenBowenBlog_Web>("webfrontend")
     .WaitFor(blogDb)
     .WithReference(blobs)
     .WaitFor(blobs)
-    .WithEnvironment("Admin__Key", adminKey);
+    .WithEnvironment("Admin__Key", adminKey)
+    .WithEnvironment("Metrics__Key", metricsKey);
 
 builder.Build().Run();

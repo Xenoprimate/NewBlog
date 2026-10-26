@@ -1,0 +1,223 @@
+﻿@page "/admin/media"
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject MediaStore Store
+@inject IServiceScopeFactory ScopeFactory
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudInteractiveProviders />
+
+<PageTitle>Media</PageTitle>
+
+<AdminNav />
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+    <MudText Typo="Typo.h4" HtmlTag="h1">Media</MudText>
+    <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="UploadAsync" Accept=".jpg,.jpeg,.png,.gif,.webp" MaximumFileCount="MaxFilesPerUpload">
+        <CustomContent Context="upload">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" Disabled="uploading"
+                       OnClick="upload.OpenFilePickerAsync">Upload images</MudButton>
+        </CustomContent>
+        <SelectedTemplate Context="files"></SelectedTemplate>
+    </MudFileUpload>
+</MudStack>
+
+@if (uploading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+
+@if (items is null)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else if (items.Count == 0)
+{
+    <MudText>No images yet. Upload one to get started.</MudText>
+}
+else
+{
+    <MudGrid Spacing="3">
+        @foreach (var item in items)
+        {
+            var itemUses = uses.GetValueOrDefault(item.Name) ?? [];
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudCard Outlined="true" Class="media-card">
+                    <a class="media-thumb" href="@item.Url" target="_blank" rel="noopener" title="Open full size">
+                        <img src="@item.Url" alt="@item.DisplayName" loading="lazy" />
+                    </a>
+                    <MudCardContent Class="pa-3">
+                        <MudText Typo="Typo.body2" Class="media-name" title="@item.DisplayName">@item.DisplayName</MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">
+                            @FormatSize(item.Size) &middot; @(item.UploadedAt?.ToString("d MMM yyyy") ?? "unknown date") &middot; @item.ContentType
+                        </MudText>
+                        <div class="mt-2">
+                            @if (itemUses.Count == 0)
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">Not used</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">Used by:</MudText>
+                                @foreach (var use in itemUses)
+                                {
+                                    <div class="media-use">
+                                        <MudLink Href="@($"/admin/posts/{use.PostId}")" Typo="Typo.caption">@use.PostTitle</MudLink>
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary" HtmlTag="span">(@use.Kind.ToString().ToLowerInvariant())</MudText>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </MudCardContent>
+                    <MudCardActions Class="px-2 pb-2 media-actions">
+                        <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="@(() => CopyAsync(MarkdownFor(item), "Markdown copied"))">Markdown</MudButton>
+                        <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Link" title="Copy link" aria-label="Copy link"
+                                       OnClick="@(() => CopyAsync(item.Url, "Link copied"))" />
+                        <MudSpacer />
+                        @if (itemUses.Count > 0)
+                        {
+                            <MudTooltip Text="In use; remove it from these posts first.">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" aria-label="Delete" Disabled="true" />
+                            </MudTooltip>
+                        }
+                        else
+                        {
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Delete"
+                                           OnClick="() => DeleteAsync(item)" />
+                        }
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private const int MaxFilesPerUpload = 20;
+
+    private List<MediaItem>? items;
+    private Dictionary<string, List<MediaUse>> uses = [];
+    private bool uploading;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+
+        uses = await MediaUsage.FindAsync(db);
+        items = await Store.ListAsync();
+    }
+
+    // Uploaded straight away (there's no save step): the image needs a real URL before it can go into a post.
+    private async Task UploadAsync(IReadOnlyList<IBrowserFile>? files)
+    {
+        if (files is null || files.Count == 0)
+        {
+            return;
+        }
+
+        uploading = true;
+        var uploaded = 0;
+        var rejected = new List<string>();
+
+        try
+        {
+            foreach (var file in files)
+            {
+                if (file.Size > PostLimits.CoverImageMaxBytes)
+                {
+                    rejected.Add($"{file.Name} (over {PostLimits.CoverImageMaxBytes / (1024 * 1024)} MB)");
+                    continue;
+                }
+
+                using var buffer = new MemoryStream();
+                await using (var stream = file.OpenReadStream(PostLimits.CoverImageMaxBytes))
+                {
+                    await stream.CopyToAsync(buffer);
+                }
+
+                var data = buffer.ToArray();
+
+                if (MediaStore.DetectFormat(data) is not { } format)
+                {
+                    rejected.Add($"{file.Name} (not a JPEG, PNG, GIF or WebP image)");
+                    continue;
+                }
+
+                await Store.UploadAsync(data, format, file.Name);
+                uploaded++;
+            }
+        }
+        finally
+        {
+            uploading = false;
+        }
+
+        if (uploaded > 0)
+        {
+            Snackbar.Add(uploaded == 1 ? "1 image uploaded" : $"{uploaded} images uploaded", Severity.Success);
+        }
+
+        if (rejected.Count > 0)
+        {
+            Snackbar.Add($"Not uploaded: {string.Join(", ", rejected)}", Severity.Warning);
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task CopyAsync(string text, string confirmation)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            Snackbar.Add(confirmation, Severity.Success);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add("Couldn't copy to the clipboard (the browser may have blocked it).", Severity.Error);
+        }
+    }
+
+    private async Task DeleteAsync(MediaItem item)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete image", $"Delete \"{item.DisplayName}\"? This can't be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        // Re-checked here: a post may have started using the image since the page loaded.
+        await using (var scope = ScopeFactory.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+
+            if ((await MediaUsage.FindAsync(db)).ContainsKey(item.Name))
+            {
+                Snackbar.Add($"\"{item.DisplayName}\" is now in use and wasn't deleted.", Severity.Warning);
+                await LoadAsync();
+                return;
+            }
+        }
+
+        await Store.DeleteAsync(item.Name);
+        Snackbar.Add("Image deleted", Severity.Success);
+        await LoadAsync();
+    }
+
+    // Square brackets would end the alt text early, so they're dropped.
+    private static string MarkdownFor(MediaItem item)
+    {
+        var alt = Path.GetFileNameWithoutExtension(item.DisplayName).Replace("[", "").Replace("]", "");
+        return $"![{alt}]({item.Url})";
+    }
+
+    private static string FormatSize(long bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024.0):0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
+}

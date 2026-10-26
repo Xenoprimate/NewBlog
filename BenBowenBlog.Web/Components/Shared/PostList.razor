@@ -5,7 +5,7 @@
             @if (post.CoverImage is not null)
             {
                 <a class="post-row-thumb" href="@($"/post/{post.Slug}")" tabindex="-1" aria-hidden="true">
-                    <img src="@CoverImageStore.UrlFor(post.CoverImage)" alt="" loading="lazy" />
+                    <img src="@MediaStore.UrlFor(post.CoverImage)" alt="" loading="lazy" />
                 </a>
             }
             <div class="post-row-body">

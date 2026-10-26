@@ -13,6 +13,10 @@
     <MudButton Href="/admin/posts/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">New post</MudButton>
 </MudStack>
 
+<MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">
+    Last 30 days: <strong>@totalViews.ToString("N0")</strong> views &middot; <strong>@totalVisitors.ToString("N0")</strong> visitors
+</MudText>
+
 @if (posts.Count == 0)
 {
     <MudText>No posts yet.</MudText>
@@ -26,6 +30,8 @@ else
                 <th>Category</th>
                 <th>Status</th>
                 <th>Updated</th>
+                <th class="text-right">Views (30d)</th>
+                <th class="text-right">Visitors (30d)</th>
                 <th></th>
             </tr>
         </thead>
@@ -37,7 +43,11 @@ else
                     <td>@post.CategoryName</td>
                     <td>@(post.PublishedAt is { } published ? $"Published {published:d MMM yyyy}" : "Draft")</td>
                     <td>@post.UpdatedAt.ToString("d MMM yyyy HH:mm")</td>
+                    <td class="text-right">@StatsFor(post.Id).Views.ToString("N0")</td>
+                    <td class="text-right">@StatsFor(post.Id).Visitors.ToString("N0")</td>
                     <td>
+                        <MudLink Href="@($"/admin/posts/{post.Id}/stats")">Stats</MudLink>
+                        &middot;
                         <MudLink Href="@($"/admin/posts/{post.Id}")">Edit</MudLink>
                         &middot;
                         <MudLink Href="@($"/post/{post.Slug}")">View</MudLink>
@@ -58,6 +68,9 @@ else
     private HttpContext HttpContext { get; set; } = default!;
 
     private List<PostRow> posts = [];
+    private Dictionary<int, VisitStats> stats = [];
+    private int totalViews;
+    private int totalVisitors;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,13 +79,28 @@ else
             .OrderByDescending(p => p.UpdatedAt)
             .Select(p => new PostRow(p.Id, p.Title, p.Slug, p.Category!.Name, p.PublishedAt, p.UpdatedAt))
             .ToListAsync();
+
+        var since = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-29);
+        stats = await Db.PostVisits
+            .AsNoTracking()
+            .Where(v => v.Date >= since)
+            .GroupBy(v => v.PostId)
+            .Select(g => new VisitStats(g.Key, g.Sum(v => v.Views), g.Count()))
+            .ToDictionaryAsync(s => s.PostId);
+
+        totalViews = stats.Values.Sum(s => s.Views);
+        totalVisitors = stats.Values.Sum(s => s.Visitors);
     }
+
+    private VisitStats StatsFor(int postId) => stats.GetValueOrDefault(postId) ?? new VisitStats(postId, 0, 0);
 
     private async Task LockAsync()
     {
         await HttpContext.SignOutAsync();
         Navigation.NavigateTo("/");
     }
+
+    private record VisitStats(int PostId, int Views, int Visitors);
 
     private record PostRow(int Id, string Title, string Slug, string CategoryName, DateTimeOffset? PublishedAt, DateTimeOffset UpdatedAt);
 }

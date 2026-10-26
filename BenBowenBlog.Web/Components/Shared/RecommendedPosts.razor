@@ -31,7 +31,7 @@
                         <a href="@($"/post/{post.Slug}")">
                             @if (post.CoverImage is not null)
                             {
-                                <img class="recommended-thumb" src="@CoverImageStore.UrlFor(post.CoverImage)" alt="" loading="lazy" />
+                                <img class="recommended-thumb" src="@MediaStore.UrlFor(post.CoverImage)" alt="" loading="lazy" />
                             }
                             <span class="recommended-text">
                                 <span class="recommended-title">@post.Title</span>

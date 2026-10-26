@@ -3,10 +3,14 @@ using Azure.Storage.Blobs.Models;
 
 namespace BenBowenBlog.Web.Media;
 
-// Cover images live in the private "covers" blob container and are served by MediaEndpoints at /media/{name}.
-public sealed class CoverImageStore(BlobServiceClient blobServiceClient)
+// All uploaded images (post covers and inline images) live in the private "media" blob container and are served by
+// MediaEndpoints at /media/{name}.
+public sealed class MediaStore(BlobServiceClient blobServiceClient)
 {
-    private readonly BlobContainerClient container = blobServiceClient.GetBlobContainerClient("covers");
+    // Blob metadata is sent as HTTP headers, which must be ASCII, so the original file name is stored URL-encoded.
+    private const string OriginalNameMetadataKey = "originalname";
+
+    private readonly BlobContainerClient container = blobServiceClient.GetBlobContainerClient("media");
 
     public Task EnsureContainerAsync(CancellationToken cancellationToken = default) =>
         container.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
@@ -38,16 +42,36 @@ public sealed class CoverImageStore(BlobServiceClient blobServiceClient)
         return null;
     }
 
-    public async Task<string> UploadAsync(byte[] data, ImageFormat format, CancellationToken cancellationToken = default)
+    public async Task<string> UploadAsync(byte[] data, ImageFormat format, string? originalName, CancellationToken cancellationToken = default)
     {
         var name = $"{Guid.NewGuid():N}.{format.Extension}";
+        var metadata = new Dictionary<string, string>();
+
+        if (!string.IsNullOrWhiteSpace(originalName))
+        {
+            metadata[OriginalNameMetadataKey] = Uri.EscapeDataString(Path.GetFileName(originalName));
+        }
 
         await container.GetBlobClient(name).UploadAsync(
             new BinaryData(data),
-            new BlobUploadOptions { HttpHeaders = new BlobHttpHeaders { ContentType = format.ContentType } },
+            new BlobUploadOptions { HttpHeaders = new BlobHttpHeaders { ContentType = format.ContentType }, Metadata = metadata },
             cancellationToken);
 
         return name;
+    }
+
+    // Newest first. Blobs uploaded before original names were recorded fall back to their random name for display.
+    public async Task<List<MediaItem>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        var items = new List<MediaItem>();
+
+        await foreach (var blob in container.GetBlobsAsync(BlobTraits.Metadata, BlobStates.None, prefix: null, cancellationToken))
+        {
+            var originalName = blob.Metadata.TryGetValue(OriginalNameMetadataKey, out var encoded) ? Uri.UnescapeDataString(encoded) : null;
+            items.Add(new MediaItem(blob.Name, blob.Properties.ContentType, blob.Properties.ContentLength ?? 0, blob.Properties.CreatedOn, originalName));
+        }
+
+        return items.OrderByDescending(item => item.UploadedAt).ToList();
     }
 
     public async Task DeleteAsync(string name, CancellationToken cancellationToken = default) =>
@@ -71,3 +95,10 @@ public sealed class CoverImageStore(BlobServiceClient blobServiceClient)
 }
 
 public sealed record ImageFormat(string Extension, string ContentType);
+
+public sealed record MediaItem(string Name, string? ContentType, long Size, DateTimeOffset? UploadedAt, string? OriginalName)
+{
+    public string Url => MediaStore.UrlFor(Name);
+
+    public string DisplayName => OriginalName ?? Name;
+}

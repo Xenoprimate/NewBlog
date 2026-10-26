@@ -6,7 +6,7 @@ public static partial class MediaEndpoints
 {
     public static IEndpointRouteBuilder MapMediaEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/media/{name}", async (string name, CoverImageStore store, HttpContext context) =>
+        endpoints.MapGet("/media/{name}", async (string name, MediaStore store, HttpContext context) =>
         {
             if (!BlobName().IsMatch(name))
             {

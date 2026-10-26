@@ -19,6 +19,8 @@ public static class PostMarkdown
     // UseAdvancedExtensions includes auto-identifiers, so every heading gets an id the table of contents can link to.
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .Use<CodeBlockExtension>()
+        .Use<FigureExtension>()
         .Build();
 
     public static MarkupString ToHtml(string markdown) => new(Markdown.ToHtml(markdown, Pipeline));
@@ -38,7 +40,8 @@ public static class PostMarkdown
         return new RenderedPost(new MarkupString(Markdown.ToHtml(document, Pipeline)), tableOfContents);
     }
 
-    private static string PlainText(ContainerInline? inline)
+    // The visible text of some inline Markdown (used for heading text in the table of contents and image alt text).
+    internal static string PlainText(ContainerInline? inline)
     {
         var text = new StringBuilder();
 

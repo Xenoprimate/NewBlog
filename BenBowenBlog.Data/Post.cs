@@ -28,6 +28,8 @@ public class Post
 
     public Post? PreviousPost { get; set; }
 
+    public List<Erratum> Errata { get; set; } = [];
+
     public DateTimeOffset? PublishedAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }

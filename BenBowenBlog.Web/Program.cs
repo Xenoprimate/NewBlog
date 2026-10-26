@@ -2,6 +2,7 @@ using BenBowenBlog.Data;
 using BenBowenBlog.Web.Admin;
 using BenBowenBlog.Web.Feed;
 using BenBowenBlog.Web.Media;
+using BenBowenBlog.Web.Metrics;
 using BenBowenBlog.Web.Site;
 using BenBowenBlog.Web.Theming;
 using BenBowenBlog.Web.Components;
@@ -41,7 +42,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<AdminKey>();
 builder.Services.AddSingleton<IconCatalog>();
-builder.Services.AddSingleton<CoverImageStore>();
+builder.Services.AddSingleton<MediaStore>();
+
+// Private post metrics: post pages queue visits, a background service writes them (see Metrics/).
+builder.Services.Configure<MetricsOptions>(builder.Configuration.GetSection("Metrics"));
+builder.Services.AddSingleton<PostViewRecorder>();
+builder.Services.AddHostedService<PostViewWriter>();
 
 builder.Services.AddRequestTimeouts();
 
@@ -57,7 +63,7 @@ await using (var scope = app.Services.CreateAsyncScope())
     await db.Database.CreateExecutionStrategy().ExecuteAsync(() => db.Database.MigrateAsync());
 }
 
-await app.Services.GetRequiredService<CoverImageStore>().EnsureContainerAsync();
+await app.Services.GetRequiredService<MediaStore>().EnsureContainerAsync();
 
 if (!app.Environment.IsDevelopment())
 {

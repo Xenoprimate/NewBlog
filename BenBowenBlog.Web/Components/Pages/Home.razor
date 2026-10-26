@@ -20,7 +20,7 @@
                     <MudCard Outlined="true" Class="flex-grow-1">
                         @if (post.CoverImage is not null)
                         {
-                            <MudCardMedia Image="@CoverImageStore.UrlFor(post.CoverImage)" Height="220" />
+                            <MudCardMedia Image="@MediaStore.UrlFor(post.CoverImage)" Height="220" />
                         }
                         <MudCardContent>
                             <MudText Typo="Typo.h5" HtmlTag="h2">

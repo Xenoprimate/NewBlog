@@ -5,6 +5,13 @@ namespace BenBowenBlog.Web.Admin;
 
 // Form model for the post editor. Only these fields are copied onto a Post, so the form can't set anything else
 // (Id, CreatedAt, ...). The cover image's blob name is managed by the editor page, not the form.
+public sealed class ErratumEditModel
+{
+    public DateTime? Date { get; set; }
+
+    public string Text { get; set; } = "";
+}
+
 public sealed class PostEditModel : IValidatableObject
 {
     [Required]
@@ -35,6 +42,8 @@ public sealed class PostEditModel : IValidatableObject
     // The post this one follows in a series (see Post.PreviousPostId).
     public int? PreviousPostId { get; set; }
 
+    public List<ErratumEditModel> Errata { get; set; } = [];
+
     public static PostEditModel FromPost(Post post) => new()
     {
         Slug = post.Slug,
@@ -45,7 +54,11 @@ public sealed class PostEditModel : IValidatableObject
         TagsText = string.Join(", ", post.Tags),
         CoverImageAlt = post.CoverImageAlt,
         IsPublished = post.PublishedAt is not null,
-        PreviousPostId = post.PreviousPostId
+        PreviousPostId = post.PreviousPostId,
+        Errata = post.Errata
+            .OrderBy(e => e.Date)
+            .Select(e => new ErratumEditModel { Date = e.Date.ToDateTime(TimeOnly.MinValue), Text = e.Text })
+            .ToList()
     };
 
     public Post CreatePost(DateTimeOffset utcNow)
@@ -66,6 +79,10 @@ public sealed class PostEditModel : IValidatableObject
         post.CoverImageAlt = string.IsNullOrWhiteSpace(CoverImageAlt) ? null : CoverImageAlt;
         post.PreviousPostId = PreviousPostId;
 
+        // Replaced wholesale: errata removed here are orphans of a required relationship, so EF deletes them.
+        post.Errata.Clear();
+        post.Errata.AddRange(Errata.Select(e => new Erratum { Date = DateOnly.FromDateTime(e.Date!.Value), Text = e.Text.Trim() }));
+
         // Keep the original publish date when re-saving a published post.
         post.PublishedAt = IsPublished ? post.PublishedAt ?? utcNow : null;
         post.UpdatedAt = utcNow;
@@ -83,6 +100,25 @@ public sealed class PostEditModel : IValidatableObject
         if (tags.Any(tag => tag.Length > PostLimits.TagMaxLength))
         {
             yield return new($"Each tag must be at most {PostLimits.TagMaxLength} characters.", [nameof(TagsText)]);
+        }
+
+        for (var i = 0; i < Errata.Count; i++)
+        {
+            var erratum = Errata[i];
+
+            if (erratum.Date is null)
+            {
+                yield return new($"Erratum {i + 1} needs a date.", [nameof(Errata)]);
+            }
+
+            if (string.IsNullOrWhiteSpace(erratum.Text))
+            {
+                yield return new($"Erratum {i + 1} needs some text.", [nameof(Errata)]);
+            }
+            else if (erratum.Text.Trim().Length > ErratumLimits.TextMaxLength)
+            {
+                yield return new($"Erratum {i + 1} is longer than {ErratumLimits.TextMaxLength} characters.", [nameof(Errata)]);
+            }
         }
     }
 }
