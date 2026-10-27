@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using System.Xml;
 using BenBowenBlog.Data;
@@ -11,7 +10,7 @@ public static class RssEndpointExtensions {
 	const int ExcerptLength = 300;
 
 	// RSS 2.0 feed of the newest published posts, linked from the menu's "Subscribe" item.
-	public static IEndpointRouteBuilder MapFeedEndpoints(this IEndpointRouteBuilder endpoints) {
+	public static IEndpointRouteBuilder MapRssEndpoints(this IEndpointRouteBuilder endpoints) {
 		endpoints.MapGet("/feed.xml", async (BlogDbContext db, HttpContext context) => {
 				var posts = await db.Posts
 					.AsNoTracking()

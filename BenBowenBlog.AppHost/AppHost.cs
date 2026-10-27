@@ -8,8 +8,8 @@ var blobs = builder.AddAzureStorage("storage")
 	.RunAsEmulator(azurite => azurite.WithDataVolume())
 	.AddBlobs("blobs");
 
-var adminKey = builder.AddParameter("admin-key", true);
-var metricsKey = builder.AddParameter("metrics-key", true);
+var adminKey = builder.AddParameter("admin-key", secret: true);
+var metricsKey = builder.AddParameter("metrics-key", secret: true);
 
 builder.AddProject<Projects.BenBowenBlog_Web>("webfrontend")
 	.WithExternalHttpEndpoints()
