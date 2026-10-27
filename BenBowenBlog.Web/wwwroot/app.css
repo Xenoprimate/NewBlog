@@ -60,18 +60,18 @@ h1:focus {
 }
 
 /* Background pattern, chosen in the footer (MainLayout adds pattern-{name}; each palette has a default). It's drawn on a
-   fixed layer behind everything, in the theme's text colour at low opacity, so it suits every palette in light and dark
+   layer behind everything (covering the whole page, so it scrolls with it), in the theme's text colour at low opacity, so it suits every palette in light and dark
    mode; cards keep solid backgrounds. pattern-none simply has no rule.
    isolation keeps the negative z-index layer above the page background rather than behind it. */
 .site-layout {
-    --pattern: color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent);
+    --pattern: color-mix(in srgb, var(--mud-palette-text-primary) 3%, transparent);
     position: relative;
     isolation: isolate;
 }
 
 .site-layout::before {
     content: "";
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
@@ -80,7 +80,7 @@ h1:focus {
 /* Soft waves: an SVG used as a mask, so the colour still comes from the theme. */
 .pattern-waves::before {
     background: var(--pattern);
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='28'%3E%3Cpath d='M0 14 C20 6 40 6 60 14 S100 22 120 14' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E") repeat 0 0 / 120px 28px;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='28'%3E%3Cpath d='M0 14 C20 6 40 6 60 14 S100 22 120 14' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E") repeat 0 0 / 240px 28px;
 }
 
 /* Staggered flecks. */
@@ -100,7 +100,7 @@ h1:focus {
 .pattern-grid::before {
     background-image: linear-gradient(var(--pattern) 1px, transparent 1px),
     linear-gradient(90deg, var(--pattern) 1px, transparent 1px);
-    background-size: 28px 28px;
+    background-size: 12px 12px;
 }
 
 /* Footer pinned to the bottom of short pages: the main content area is a full-height flex column. */
@@ -146,6 +146,38 @@ h1:focus {
     color: var(--mud-palette-primary);
 }
 
+.site-footer-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+/* The random line under the copyright notice (FooterLineProvider); inline Markdown, so it may contain links and code. */
+.site-footer-line {
+    font-size: 0.8125rem;
+    font-style: italic;
+    opacity: 0.85;
+    overflow-wrap: anywhere;
+}
+
+.site-footer-line a {
+    color: var(--mud-palette-primary);
+}
+
+.site-footer-line code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.95em;
+    font-style: normal;
+}
+
+.footer-line-raw {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+    overflow-wrap: anywhere;
+}
+
 .theme-picker {
     display: flex;
     flex-wrap: wrap;
@@ -163,6 +195,9 @@ h1:focus {
     height: 1.5rem;
     border-radius: 50%;
     border: 1px solid var(--mud-palette-lines-default);
+    /* Keep the gradient inside the border so it can't fringe the anti-aliased edge. The inline style must therefore set
+       background-image only: the background shorthand would reset this. */
+    background-clip: padding-box;
     transform: rotate(-90deg);
 }
 
@@ -179,9 +214,20 @@ h1:focus {
 }
 
 .theme-mode {
-    padding: 0.2rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* A fixed height (not content-driven) so the text pill and the icon pill always match. */
+    box-sizing: border-box;
+    height: 1.875rem;
+    padding: 0 0.75rem;
     color: inherit;
     text-decoration: none;
+}
+
+/* Icons centred on the box (not the text baseline) and sized to the text, so icon and text pills match in height. */
+.theme-mode .mud-icon-root {
+    font-size: 1.15em;
 }
 
 .theme-mode + .theme-mode {
@@ -224,7 +270,7 @@ h1:focus {
 }
 
 .mobile-menu > summary:hover, .mobile-menu[open] > summary {
-    background: rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--mud-palette-appbar-text) 15%, transparent);
 }
 
 .mobile-menu-panel {
@@ -1135,4 +1181,51 @@ h1:focus {
 
 .blazor-error-boundary::after {
     content: "An error has occurred."
+}
+
+@font-face {
+    font-family: "TitleFont";
+    src: url("fonts/title_font.woff2") format("woff2");
+    font-weight: 700;
+    font-display: swap;
+}
+
+/* Post titles: post page (h3), About page (h4), home cards (h5), category/tag lists (h6). Set via the variables MudText reads. */
+.post-title {
+    --mud-typography-h3-family: Georgia, "Times New Roman", serif;
+    --mud-typography-h4-family: Georgia, "Times New Roman", serif;
+    --mud-typography-h5-family: Georgia, "Times New Roman", serif;
+    --mud-typography-h6-family: Georgia, "Times New Roman", serif;
+}
+
+.site-title {
+    --mud-typography-h6-family: "TitleFont", Georgia, serif;
+    --mud-typography-h6-weight: 700;
+    font-size: 1.7em;
+}
+
+/* About page (Pages/About.razor): photo beside the intro on wide screens, stacked and capped on narrow ones. */
+.about-photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10%;
+}
+
+@media (max-width: 959.98px) {
+    .about-photo {
+        max-width: 16rem;
+        margin: 0 auto;
+    }
+}
+
+.about-social {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.about-social .mud-icon-root {
+    flex-shrink: 0;
+    color: var(--mud-palette-text-secondary);
 }

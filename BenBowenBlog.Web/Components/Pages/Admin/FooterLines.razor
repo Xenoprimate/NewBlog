@@ -1,0 +1,149 @@
+﻿@page "/admin/footer"
+@attribute [Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using BenBowenBlog.Web.Site
+@inject IServiceScopeFactory ScopeFactory
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject FooterLineProvider LineProvider
+
+<MudInteractiveProviders/>
+
+<PageTitle>Footer lines</PageTitle>
+
+<AdminNav/>
+
+<MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-2">Footer lines</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">One of these is shown at random under the copyright notice on every page.</MudText>
+
+<MudPaper Outlined="true" Class="pa-4 mb-6">
+    <MudStack Spacing="2">
+        <MudTextField @bind-Value="newText" Label="New line" Variant="Variant.Outlined" Immediate="true"
+                      HelperText="Markdown supported: *emphasis*, `code`, [links](https://…)"
+                      OnKeyDown="OnKeyDownAsync"/>
+
+        @if (!String.IsNullOrWhiteSpace(newText)) {
+            <MudText Typo="Typo.caption">Preview</MudText>
+            <div class="site-footer-line">@PostMarkdown.ToInlineHtml(newText)</div>
+        }
+
+        <div>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(String.IsNullOrWhiteSpace(newText) || saving)" OnClick="AddAsync">Add
+            </MudButton>
+        </div>
+    </MudStack>
+</MudPaper>
+
+@if (rows is null) {
+    <MudProgressLinear Indeterminate="true"/>
+}
+else if (rows.Count == 0) {
+    <MudText>No footer lines yet. The footer shows only the copyright line.</MudText>
+}
+else {
+    <MudSimpleTable Hover="true" Outlined="true">
+        <thead>
+        <tr>
+            <th>Line</th>
+            <th>Added</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var row in rows) {
+            <tr>
+                <td>
+                    <div class="site-footer-line">@PostMarkdown.ToInlineHtml(row.Text)</div>
+                    <div class="footer-line-raw">@row.Text</div>
+                </td>
+                <td style="white-space: nowrap;">@row.CreatedAt.ToString("yyyy-MM-dd")</td>
+                <td class="text-right">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="Delete" Color="Color.Error"
+                                   OnClick="() => DeleteAsync(row)"/>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </MudSimpleTable>
+}
+
+@code {
+    private List<FooterLineRow>? rows;
+    private string newText = "";
+    private bool saving;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync() {
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+
+        rows = await db.FooterLines
+            .AsNoTracking()
+            .OrderByDescending(l => l.CreatedAt)
+            .Select(l => new FooterLineRow(l.Id, l.Text, l.CreatedAt))
+            .ToListAsync();
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs e) {
+        if (e.Key == "Enter" && !String.IsNullOrWhiteSpace(newText)) {
+            await AddAsync();
+        }
+    }
+
+    private async Task AddAsync() {
+        var text = newText.ReplaceLineEndings(" ").Trim();
+
+        if (text.Length == 0 || saving) {
+            return;
+        }
+
+        saving = true;
+
+        try {
+            await using var scope = ScopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+
+            // Few enough lines that comparing in memory is simplest (and gives a case-insensitive match without collations).
+            var existing = await db.FooterLines.Select(l => l.Text).ToListAsync();
+
+            if (existing.Any(other => String.Equals(other.Trim(), text, StringComparison.OrdinalIgnoreCase))) {
+                Snackbar.Add("That line already exists.", Severity.Warning);
+                return;
+            }
+
+            db.FooterLines.Add(new FooterLine {
+                Text = text, CreatedAt = DateTimeOffset.UtcNow
+            });
+            await db.SaveChangesAsync();
+
+            LineProvider.Invalidate();
+            newText = "";
+            await LoadAsync();
+            Snackbar.Add("Footer line added", Severity.Success);
+        }
+        finally {
+            saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(FooterLineRow row) {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete footer line", $"Delete \"{row.Text}\"?", "Delete", cancelText: "Cancel");
+
+        if (confirmed != true) {
+            return;
+        }
+
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+
+        await db.FooterLines.Where(l => l.Id == row.Id).ExecuteDeleteAsync();
+
+        LineProvider.Invalidate();
+        await LoadAsync();
+        Snackbar.Add("Footer line deleted", Severity.Success);
+    }
+
+    private record FooterLineRow(int Id, string Text, DateTimeOffset CreatedAt);
+}

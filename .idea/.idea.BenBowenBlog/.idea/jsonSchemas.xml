@@ -14,6 +14,9 @@
                   <Item>
                     <option name="path" value="BenBowenBlog.AppHost/appsettings.json" />
                   </Item>
+                  <Item>
+                    <option name="path" value="BenBowenBlog.Web/appsettings.json" />
+                  </Item>
                 </list>
               </option>
             </SchemaInfo>

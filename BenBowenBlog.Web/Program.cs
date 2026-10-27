@@ -42,6 +42,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<AdminKeyAuthenticator>();
 builder.Services.AddSingleton<IconCatalog>();
 builder.Services.AddSingleton<MediaStore>();
+builder.Services.AddSingleton<FooterLineProvider>();
 
 // Private post metrics: post pages queue visits, a background service writes them (see Metrics/).
 builder.Services.Configure<MetricsOptions>(builder.Configuration.GetSection("Metrics"));

@@ -1,16 +1,24 @@
-﻿@using BenBowenBlog.Web.Theming
+﻿@using BenBowenBlog.Web.Site
+@using BenBowenBlog.Web.Theming
 @inject NavigationManager Navigation
+@inject FooterLineProvider FooterLines
 
 @* Theme choices are plain links to /theme/... endpoints that set a cookie and redirect back. data-enhance-nav="false"
    forces a full page load so the new theme's styles are applied. *@
 <footer class="site-footer">
     <MudContainer MaxWidth="MaxWidth.Large" Class="site-footer-inner">
-        <div class="site-footer-meta">
-            &copy; Ben Bowen @DateTime.UtcNow.Year
-            <span aria-hidden="true">&middot;</span>
-            <a href="/about">About</a>
-            <span aria-hidden="true">&middot;</span>
-            <a href="/feed.xml">Subscribe</a>
+        <div class="site-footer-text">
+            <div class="site-footer-meta">
+                &copy; Ben Bowen 2016 to DateTime.Now.Year
+                <span aria-hidden="true">&middot;</span>
+                <a href="/about">About</a>
+                <span aria-hidden="true">&middot;</span>
+                <a href="/feed.xml">Subscribe</a>
+            </div>
+
+            @if (line is not null) {
+                <div class="site-footer-line">@PostMarkdown.ToInlineHtml(line)</div>
+            }
         </div>
 
         <div class="theme-picker">
@@ -36,11 +44,11 @@
             </div>
 
             <div class="theme-modes" role="group" aria-label="Background pattern">
-                @foreach (var pattern in Enum.GetValues<BackgroundPattern>()) {
+                @foreach (var pattern in Enum.GetValues<BackgroundPattern>().Reverse()) {
                     var active = pattern == Selection.Pattern;
                     <a class="theme-mode @(active ? "active" : "")"
                        href="@ThemeUrl("pattern", pattern.ToString().ToLowerInvariant())" rel="nofollow"
-                       data-enhance-nav="false" aria-current="@(active ? "true" : null)">@pattern</a>
+                       data-enhance-nav="false" aria-current="@(active ? "true" : null)"><MudIcon Icon="@(pattern.GetVisualizationIcon())" Title="@($"Pattern: {pattern}")"/></a>
                 }
             </div>
         </div>
@@ -51,11 +59,15 @@
     [Parameter, EditorRequired]
     public ThemeSelection Selection { get; set; } = default!;
 
+    private string? line;
+
+    protected override async Task OnInitializedAsync() => line = await FooterLines.PickAsync();
+
     private string ThemeUrl(string kind, string value) {
         var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
         return $"/theme/{kind}/{value}?returnUrl={Uri.EscapeDataString(returnUrl)}";
     }
 
     private static string SwatchStyle(BlogTheme theme) =>
-        $"background: conic-gradient({theme.Swatches[0]} 0 33.3%, {theme.Swatches[1]} 0 66.6%, {theme.Swatches[2]} 0);";
+        $"background-image: conic-gradient({theme.Swatches[0]} 0 33%, {theme.Swatches[1]} 34% 66%, {theme.Swatches[2]} 67%);";
 }

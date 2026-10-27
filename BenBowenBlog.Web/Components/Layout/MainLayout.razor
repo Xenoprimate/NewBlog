@@ -7,7 +7,10 @@
 
 <MudLayout Class="@($"site-layout pattern-{selection.Pattern.ToString().ToLowerInvariant()}")">
     <MudAppBar Elevation="1">
-        <MudLink Href="/" Color="Color.Inherit" Typo="Typo.h6" Underline="Underline.None">BenBowenBlog</MudLink>
+        <MudLink Href="/" Color="Color.Inherit" Typo="Typo.h6" Underline="Underline.None" Class="d-flex align-center gap-2 site-title">
+            <MudImage Src="@Assets["favicon.png"]" Alt="" Width="36" Height="36" Style="transform: translateY(-0.075em);" />
+            Ben Bowen's Blog
+        </MudLink>
         <MudSpacer/>
         <TopNav/>
     </MudAppBar>

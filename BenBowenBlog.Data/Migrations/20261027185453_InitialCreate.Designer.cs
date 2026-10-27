@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BenBowenBlog.Data.Migrations
 {
     [DbContext(typeof(BlogDbContext))]
-    [Migration("20261026200828_InitialCreate")]
+    [Migration("20261027185453_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -76,6 +76,26 @@ namespace BenBowenBlog.Data.Migrations
                     b.HasIndex("PostId");
 
                     b.ToTable("Errata");
+                });
+
+            modelBuilder.Entity("BenBowenBlog.Data.FooterLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FooterLines");
                 });
 
             modelBuilder.Entity("BenBowenBlog.Data.Post", b =>

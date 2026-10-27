@@ -11,6 +11,8 @@ public class BlogDbContext(DbContextOptions<BlogDbContext> options) : DbContext(
 
 	public DbSet<PostVisit> PostVisits => Set<PostVisit>();
 
+	public DbSet<FooterLine> FooterLines => Set<FooterLine>();
+
 	protected override void OnModelCreating(ModelBuilder modelBuilder) {
 		modelBuilder.Entity<Post>(post => {
 			post.Property(p => p.Slug).HasMaxLength(Post.SlugMaxLength);

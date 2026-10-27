@@ -1,3 +1,5 @@
+using MudBlazor;
+
 namespace BenBowenBlog.Web.Theming;
 
 public enum ThemeMode {
@@ -10,9 +12,9 @@ public enum ThemeMode {
 public enum BackgroundPattern {
 	None,
 	Waves,
+	Grid,
 	Flecks,
 	Lines,
-	Grid
 }
 
 public sealed record ThemeSelection(BlogTheme Theme, ThemeMode Mode, bool IsDarkMode, BackgroundPattern Pattern);
@@ -44,4 +46,13 @@ public static class ThemePreferences {
 
 		return new ThemeSelection(theme, mode, isDark, pattern);
 	}
+	
+	public static string GetVisualizationIcon(this BackgroundPattern @this) => @this switch {
+		BackgroundPattern.None => Icons.Material.Filled.Block,
+		BackgroundPattern.Waves => Icons.Material.Filled.Waves,
+		BackgroundPattern.Flecks => Icons.Material.Filled.Grain,
+		BackgroundPattern.Lines => Icons.Material.Filled.Texture,
+		BackgroundPattern.Grid => Icons.Material.Filled.GridOn,
+		_ => Icons.Material.Filled.QuestionMark
+	};
 }

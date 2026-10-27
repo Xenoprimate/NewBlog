@@ -16,10 +16,10 @@
                 <MudItem xs="12" Class="d-flex home-card">
                     <MudCard Outlined="true" Class="flex-grow-1">
                         @if (post.CoverImage is not null) {
-                            <MudCardMedia Image="@MediaStore.UrlFor(post.CoverImage)" Height="220"/>
+                            <MudLink Href="@($"/post/{post.Slug}")"><MudCardMedia Image="@MediaStore.UrlFor(post.CoverImage)" Height="220"/></MudLink>
                         }
                         <MudCardContent>
-                            <MudText Typo="Typo.h5" HtmlTag="h2">
+                            <MudText Typo="Typo.h5" HtmlTag="h2" Class="post-title">
                                 <MudLink Href="@($"/post/{post.Slug}")"
                                          Underline="Underline.Hover">@post.Title</MudLink>
                             </MudText>

@@ -15,27 +15,47 @@ public sealed record PaletteSpec(
 	string BackgroundSeed,
 	string TextSeed,
 	string[] Swatches,
-	BackgroundPattern DefaultPattern
+	BackgroundPattern DefaultPattern,
+	DarkPaletteSpec? Dark = null
+);
+
+// Exact dark-mode colours for a palette that shouldn't be derived (e.g. one recreating an existing dark site). Anything
+// left null is derived as usual; accents are still lightened if needed to stay readable.
+public sealed record DarkPaletteSpec(
+	string? AppBar = null,
+	string? AppBarText = null,
+	string? Background = null,
+	string? Surface = null,
+	string? Text = null,
+	string? Primary = null,
+	string? Secondary = null,
+	string? Tertiary = null
 );
 
 public sealed record BlogTheme(string Key, string Name, MudTheme Theme, string[] Swatches, BackgroundPattern DefaultPattern);
 
 public static class BlogThemes {
-	public const string DefaultKey = "lagoon";
+	public const string DefaultKey = "classic";
 
 	static readonly PaletteSpec[] Specs = [
-		// https://coolors.co/bce784-5dd39e-348aa7-525174-513b56
-		new("lagoon", "Lagoon", "#513b56", ColorMath.White, "#348aa7", "#5dd39e", "#bce784", "#bce784", "#525174",
-			["#513b56", "#348aa7", "#5dd39e"], BackgroundPattern.Waves),
-		// https://coolors.co/989788-51344d-6f5060-a78682-e7ebc5
-		new("heather", "Heather", "#51344d", ColorMath.White, "#6f5060", "#a78682", "#989788", "#e7ebc5", "#51344d",
-			["#51344d", "#a78682", "#e7ebc5"], BackgroundPattern.Flecks),
-		// https://coolors.co/c6878f-b79d94-969696-67697c-253d5b
-		new("dusk", "Dusk", "#253d5b", ColorMath.White, "#c6878f", "#67697c", "#b79d94", "#b79d94", "#253d5b",
-			["#253d5b", "#c6878f", "#b79d94"], BackgroundPattern.Lines),
-		// https://coolors.co/343434-2f3061-c3f73a-5f5980-dfdfdf
-		new("neon", "Neon", "#343434", "#c3f73a", "#2f3061", "#5f5980", "#c3f73a", "#dfdfdf", "#343434",
-			["#343434", "#2f3061", "#c3f73a"], BackgroundPattern.Grid)
+		// Recreates benbowen.blog: a cream header with dusty-maroon title and rust links by day; by night the old site's warm
+		// near-black page, light grey text and gold links.
+		new("classic", "Classic", "#fff8ea", "#755353", "#875127", "#915e41", "#9fc659", "#f5ede1", "#332f29",
+			["#211f1d", "#ebc17e", "#c26c29"], BackgroundPattern.Lines,
+			new DarkPaletteSpec(AppBar: "#2b2723", AppBarText: "#dabca3", Background: "#171513", Surface: "#2a2724", Text: "#dededb",
+				Primary: "#d0bda0", Secondary: "#b99966", Tertiary: "#9fc659")),
+
+		// https://coolors.co/87bfc4-475b5a-8d8e8e-a3a9aa-bbbbbf
+		new("harbour", "Harbour", "#475b5a", ColorMath.White, "#87bfc4", "#8d8e8e", "#475b5a", "#bbbbbf", "#475b5a",
+			["#475b5a", "#87bfc4", "#bbbbbf"], BackgroundPattern.Lines),
+
+		// https://coolors.co/67597a-544e61-6e8894-9ab87a-f8f991
+		new("twilight", "Twilight", "#544e61", "#f8f991", "#67597a", "#6e8894", "#9ab87a", "#f8f991", "#544e61",
+			["#544e61", "#9ab87a", "#f8f991"], BackgroundPattern.Lines),
+
+		// https://coolors.co/443742-846c5b-cea07e-edd9a3-e2e8c0
+		new("sandstone", "Sandstone", "#443742", "#edd9a3", "#846c5b", "#cea07e", "#443742", "#edd9a3", "#443742",
+			["#443742", "#cea07e", "#edd9a3"], BackgroundPattern.Lines)
 	];
 
 	public static IReadOnlyList<BlogTheme> All { get; } = Specs.Select(spec => new BlogTheme(spec.Key, spec.Name, ThemeBuilder.Build(spec), spec.Swatches, spec.DefaultPattern)).ToArray();
@@ -71,7 +91,7 @@ public static class ThemeBuilder {
 
 		return new PaletteLight {
 			Primary = primary, PrimaryContrastText = ColorMath.ReadableOn(primary), Secondary = secondary, SecondaryContrastText = ColorMath.ReadableOn(secondary),
-			Tertiary = tertiary, TertiaryContrastText = ColorMath.ReadableOn(tertiary), AppbarBackground = spec.AppBar, AppbarText = spec.AppBarText,
+			Tertiary = tertiary, TertiaryContrastText = ColorMath.ReadableOn(tertiary), AppbarBackground = spec.AppBar, AppbarText = ColorMath.EnsureContrast(spec.AppBarText, spec.AppBar, TextContrast),
 			Background = background, BackgroundGray = backgroundGray, Surface = surface, DrawerBackground = surface,
 			DrawerText = text, TextPrimary = text, TextSecondary = textSecondary, ActionDefault = ColorMath.Rgba(text, 0.6),
 			LinesDefault = ColorMath.Rgba(text, 0.12), LinesInputs = ColorMath.Rgba(text, 0.42), TableLines = ColorMath.Rgba(text, 0.12), Divider = ColorMath.Rgba(text, 0.12),
@@ -80,24 +100,30 @@ public static class ThemeBuilder {
 	}
 
 	static PaletteDark BuildDark(PaletteSpec spec) {
-		// Everything dark is tinted with the app bar's hue, so each theme keeps its character in dark mode.
-		var baseHsl = ColorMath.ToHsl(spec.AppBar);
-		var background = ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.25)).WithL(0.09));
-		var surface = ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.25)).WithL(0.13));
-		var appBar = ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.3)).WithL(0.15));
-		var backgroundGray = ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.25)).WithL(0.17));
+		var dark = spec.Dark ?? new DarkPaletteSpec();
 
-		var text = ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.12)).WithL(0.92));
-		var textSecondary = ColorMath.EnsureContrast(ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.12)).WithL(0.7)), surface, TextContrast);
+		// Everything dark is tinted with the app bar's hue, so each theme keeps its character in dark mode, unless the palette
+		// gives exact dark colours.
+		var baseHsl = ColorMath.ToHsl(spec.AppBar);
+		var background = dark.Background ?? ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.25)).WithL(0.09));
+		var surface = dark.Surface ?? ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.25)).WithL(0.13));
+		var appBar = dark.AppBar ?? ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.3)).WithL(0.15));
+		var appBarText = ColorMath.EnsureContrast(dark.AppBarText ?? spec.AppBarText, appBar, TextContrast);
+		var surfaceHsl = ColorMath.ToHsl(surface);
+		var backgroundGray = ColorMath.ToHex(surfaceHsl.WithL(Math.Min(1, surfaceHsl.L + 0.04)));
+
+		var text = dark.Text ?? ColorMath.ToHex(baseHsl.WithS(Math.Min(baseHsl.S, 0.12)).WithL(0.92));
+		var textHsl = ColorMath.ToHsl(text);
+		var textSecondary = ColorMath.EnsureContrast(ColorMath.ToHex(textHsl.WithL(0.7)), surface, TextContrast);
 
 		// Accents are lightened until they read on cards (the lighter of the two dark backgrounds).
-		var primary = DarkAccent(spec.Primary, surface);
-		var secondary = DarkAccent(spec.Secondary, surface);
-		var tertiary = DarkAccent(spec.Tertiary, surface);
+		var primary = DarkAccent(dark.Primary ?? spec.Primary, surface);
+		var secondary = DarkAccent(dark.Secondary ?? spec.Secondary, surface);
+		var tertiary = DarkAccent(dark.Tertiary ?? spec.Tertiary, surface);
 
 		return new PaletteDark {
 			Primary = primary, PrimaryContrastText = ColorMath.ReadableOn(primary), Secondary = secondary, SecondaryContrastText = ColorMath.ReadableOn(secondary),
-			Tertiary = tertiary, TertiaryContrastText = ColorMath.ReadableOn(tertiary), AppbarBackground = appBar, AppbarText = spec.AppBarText,
+			Tertiary = tertiary, TertiaryContrastText = ColorMath.ReadableOn(tertiary), AppbarBackground = appBar, AppbarText = appBarText,
 			Background = background, BackgroundGray = backgroundGray, Surface = surface, DrawerBackground = surface,
 			DrawerText = text, TextPrimary = text, TextSecondary = textSecondary, ActionDefault = ColorMath.Rgba(text, 0.7),
 			LinesDefault = ColorMath.Rgba(text, 0.12), LinesInputs = ColorMath.Rgba(text, 0.3), TableLines = ColorMath.Rgba(text, 0.12), Divider = ColorMath.Rgba(text, 0.12),

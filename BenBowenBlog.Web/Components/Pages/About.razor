@@ -1,0 +1,58 @@
+﻿@page "/about"
+@using BenBowenBlog.Web.Site
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteOptions> SiteOptions
+
+<PageTitle>About</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="Ben &quot;Xenoprimate&quot; Bowen: software engineering, C#/.NET and engine development; creator of TinyFFR."/>
+</HeadContent>
+
+<MudGrid Spacing="6" Class="about">
+    <MudItem xs="12" md="4">
+        <img class="about-photo" src="@Assets["profile_pic.jpg"]" alt="Ben Bowen"/>
+    </MudItem>
+
+    <MudItem xs="12" md="8">
+        <MudText Typo="Typo.h4" HtmlTag="h1" Class="mb-4 post-title">Ben "Xenoprimate" Bowen's Blog</MudText>
+
+        <div class="post-body about-body">
+            <p>I like to write about software engineering mostly (C# / .NET / Engine-dev) but also occasionally other miscellaneous stuff. :)</p>
+
+            <p>I am the creator of <a href="https://tinyffr.dev" target="_blank" rel="noopener">TinyFFR</a>, a realtime 3D rendering library distributed via NuGet.</p>
+            
+            <p>
+                Previously I worked at <a href="http://amberkinetics.com/" target="_blank" rel="noopener">Amber Kinetics</a> as the senior manager &amp;
+                tech-lead for their distributed flywheel control system.
+            </p>
+
+            <p>
+                I've also released a game on Steam on my own 3D engine
+                ('<a href="https://store.steampowered.com/app/508940/Escape_Lizards/" target="_blank" rel="noopener">Escape Lizards</a>'), worked in the
+                defence industry on fibre-optic perimeter sensors, and worked on realtime show control software.
+            </p>
+
+            @if (!String.IsNullOrWhiteSpace(SiteOptions.Value.BlueskyUrl)) {
+                <p class="about-social">
+                    <MudIcon Icon="@BrandIcons.Bluesky"/>
+                    <span>You can find me on Bluesky as <a href="@SiteOptions.Value.BlueskyUrl" target="_blank" rel="noopener">"Xenoprimate"</a>.</span>
+                </p>
+            }
+
+            @if (!String.IsNullOrWhiteSpace(SiteOptions.Value.GitHubUrl)) {
+                <p class="about-social">
+                    <MudIcon Icon="@Icons.Custom.Brands.GitHub"/>
+                    <span>My GitHub profile has some open-source stuff at <a href="@SiteOptions.Value.GitHubUrl" target="_blank" rel="noopener">/Xenoprimate</a>.</span>
+                </p>
+            }
+
+            @if (!String.IsNullOrWhiteSpace(SiteOptions.Value.LinkedInUrl)) {
+                <p class="about-social">
+                    <MudIcon Icon="@Icons.Custom.Brands.LinkedIn"/>
+                    <span>Finally, you can connect with me on <a href="@SiteOptions.Value.LinkedInUrl" target="_blank" rel="noopener">LinkedIn</a>.</span>
+                </p>
+            }
+        </div>
+    </MudItem>
+</MudGrid>

@@ -6,7 +6,7 @@
    breakpoint (960px). The mobile menu is a native <details> element; wwwroot/js/menu.js adds closing on an outside
    click, Escape, or choosing a link. *@
 
-<nav class="d-none d-md-flex align-center" aria-label="Main">
+<nav class="d-none d-md-flex align-center top-nav" aria-label="Main">
     @foreach (var link in Links) {
         <MudButton Href="@link.Href" Color="Color.Inherit" Variant="Variant.Text"
                    StartIcon="@link.Icon">@link.Text</MudButton>

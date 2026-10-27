@@ -28,6 +28,20 @@ namespace BenBowenBlog.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FooterLines",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Text = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FooterLines", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Posts",
                 columns: table => new
                 {
@@ -158,6 +172,9 @@ namespace BenBowenBlog.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Errata");
+
+            migrationBuilder.DropTable(
+                name: "FooterLines");
 
             migrationBuilder.DropTable(
                 name: "PostVisits");

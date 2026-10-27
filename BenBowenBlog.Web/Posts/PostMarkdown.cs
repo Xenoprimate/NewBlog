@@ -1,5 +1,6 @@
 using System.Text;
 using Markdig;
+using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -22,6 +23,21 @@ public static class PostMarkdown {
 		.Build();
 
 	public static MarkupString ToHtml(string markdown) => new(Markdown.ToHtml(markdown, Pipeline));
+
+	// Renders a one-line snippet (e.g. a footer line) without the <p> wrapper, so it can sit inside other markup. Line
+	// breaks are flattened first, so the snippet can never become several paragraphs.
+	public static MarkupString ToInlineHtml(string markdown) {
+		var document = Markdown.Parse(markdown.ReplaceLineEndings(" "), Pipeline);
+
+		using var writer = new StringWriter();
+		var renderer = new HtmlRenderer(writer) {
+			ImplicitParagraph = true
+		};
+		Pipeline.Setup(renderer);
+		renderer.Render(document);
+
+		return new MarkupString(writer.ToString().Trim());
+	}
 
 	// Parses once and renders from the same document, so the table of contents' ids match the rendered headings.
 	public static RenderedPost Render(string markdown) {
