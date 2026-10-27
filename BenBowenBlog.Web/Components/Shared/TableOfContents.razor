@@ -1,7 +1,6 @@
 ﻿@* Links use the page's own path rather than a bare "#id": App.razor sets <base href="/">, so "#id" would resolve to
    the home page. *@
-@if (Entries.Count >= 2)
-{
+@if (Entries.Count >= 2) {
     var topLevel = Entries.Min(e => e.Level);
 
     <nav class="toc" aria-label="Table of contents">
@@ -10,8 +9,7 @@
             <a class="toc-top" href="@($"{PagePath}#post-top")">Top</a>
         </div>
         <ul class="toc-list">
-            @foreach (var entry in Entries)
-            {
+            @foreach (var entry in Entries) {
                 <li class="toc-level-@(entry.Level - topLevel)">
                     <a href="@($"{PagePath}#{entry.Id}")">@entry.Text</a>
                 </li>

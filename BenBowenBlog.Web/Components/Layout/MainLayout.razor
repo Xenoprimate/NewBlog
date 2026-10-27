@@ -3,20 +3,20 @@
 
 @* The layout renders statically, so the theme is chosen per request from the reader's cookies (see ThemePreferences)
    rather than switched live. *@
-<MudThemeProvider Theme="@selection.Theme.Theme" IsDarkMode="@selection.IsDarkMode" />
+<MudThemeProvider Theme="@selection.Theme.Theme" IsDarkMode="@selection.IsDarkMode"/>
 
 <MudLayout Class="@($"site-layout pattern-{selection.Pattern.ToString().ToLowerInvariant()}")">
     <MudAppBar Elevation="1">
         <MudLink Href="/" Color="Color.Inherit" Typo="Typo.h6" Underline="Underline.None">BenBowenBlog</MudLink>
-        <MudSpacer />
-        <TopNav />
+        <MudSpacer/>
+        <TopNav/>
     </MudAppBar>
 
     <MudMainContent Class="site-main">
         <MudContainer MaxWidth="MaxWidth.Medium" Class="py-6">
             @Body
         </MudContainer>
-        <SiteFooter Selection="selection" />
+        <SiteFooter Selection="selection"/>
     </MudMainContent>
 </MudLayout>
 

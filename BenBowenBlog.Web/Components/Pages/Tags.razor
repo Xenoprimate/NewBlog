@@ -8,12 +8,12 @@
 @* A plain GET form: works without JavaScript; wwwroot/js/tag-filter.js adds filtering as you type. *@
 <form method="get" action="/tags" class="tag-search mb-6" role="search">
     <label for="tag-search" class="visually-hidden">Search tags</label>
-    <input id="tag-search" name="q" type="search" class="text-input" placeholder="Search tags" value="@Q" autocomplete="off" />
+    <input id="tag-search" name="q" type="search" class="text-input" placeholder="Search tags" value="@Q"
+           autocomplete="off"/>
 </form>
 
 <div class="tag-grid">
-    @foreach (var tag in shown)
-    {
+    @foreach (var tag in shown) {
         <a class="tag-pill" href="@TagUrls.For(tag.Tag)" data-tag="@tag.Tag">
             <span class="tag-name">#@tag.Tag</span>
             <span class="tag-count">@tag.Count</span>
@@ -29,8 +29,7 @@
 
     private List<TagCount> shown = [];
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         // Grouped in memory: a blog has few enough posts that loading every tag array is trivial.
         var tagArrays = await Db.Posts.AsNoTracking().Published().Select(p => p.Tags).ToListAsync();
         var query = Q?.Trim().ToLowerInvariant();
@@ -39,7 +38,7 @@
             .SelectMany(tags => tags)
             .GroupBy(tag => tag)
             .Select(group => new TagCount(group.Key, group.Count()))
-            .Where(tag => string.IsNullOrEmpty(query) || tag.Tag.Contains(query, StringComparison.Ordinal))
+            .Where(tag => String.IsNullOrEmpty(query) || tag.Tag.Contains(query, StringComparison.Ordinal))
             .OrderBy(tag => tag.Tag, StringComparer.Ordinal)
             .ToList();
     }

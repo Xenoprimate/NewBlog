@@ -6,61 +6,64 @@
 
 <PageTitle>Posts</PageTitle>
 
-<AdminNav />
+<AdminNav/>
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
     <MudText Typo="Typo.h4" HtmlTag="h1">Posts</MudText>
-    <MudButton Href="/admin/posts/new" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add">New post</MudButton>
+    <MudButton Href="/admin/posts/new" Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add">New post
+    </MudButton>
 </MudStack>
 
 <MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">
-    Last 30 days: <strong>@totalViews.ToString("N0")</strong> views &middot; <strong>@totalVisitors.ToString("N0")</strong> visitors
+    Last 30 days: <strong>@totalViews.ToString("N0")</strong> views &middot;
+    <strong>@totalVisitors.ToString("N0")</strong> visitors
 </MudText>
 
-@if (posts.Count == 0)
-{
+@if (posts.Count == 0) {
     <MudText>No posts yet.</MudText>
 }
-else
-{
+else {
     <MudSimpleTable Hover="true" Outlined="true">
         <thead>
-            <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Updated</th>
-                <th class="text-right">Views (30d)</th>
-                <th class="text-right">Visitors (30d)</th>
-                <th></th>
-            </tr>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th class="text-right">Views (30d)</th>
+            <th class="text-right">Visitors (30d)</th>
+            <th></th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var post in posts)
-            {
-                <tr>
-                    <td>@post.Title<br /><MudText Typo="Typo.caption" Class="mud-text-secondary"><code>@post.Slug</code></MudText></td>
-                    <td>@post.CategoryName</td>
-                    <td>@(post.PublishedAt is { } published ? $"Published {published:d MMM yyyy}" : "Draft")</td>
-                    <td>@post.UpdatedAt.ToString("d MMM yyyy HH:mm")</td>
-                    <td class="text-right">@StatsFor(post.Id).Views.ToString("N0")</td>
-                    <td class="text-right">@StatsFor(post.Id).Visitors.ToString("N0")</td>
-                    <td>
-                        <MudLink Href="@($"/admin/posts/{post.Id}/stats")">Stats</MudLink>
-                        &middot;
-                        <MudLink Href="@($"/admin/posts/{post.Id}")">Edit</MudLink>
-                        &middot;
-                        <MudLink Href="@($"/post/{post.Slug}")">View</MudLink>
-                    </td>
-                </tr>
-            }
+        @foreach (var post in posts) {
+            <tr>
+                <td>@post.Title<br/>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary"><code>@post.Slug</code></MudText>
+                </td>
+                <td>@post.CategoryName</td>
+                <td>@(post.PublishedAt is { } published ? $"Published {published:d MMM yyyy}" : "Draft")</td>
+                <td>@post.UpdatedAt.ToString("d MMM yyyy HH:mm")</td>
+                <td class="text-right">@StatsFor(post.Id).Views.ToString("N0")</td>
+                <td class="text-right">@StatsFor(post.Id).Visitors.ToString("N0")</td>
+                <td>
+                    <MudLink Href="@($"/admin/posts/{post.Id}/stats")">Stats</MudLink>
+                    &middot;
+                    <MudLink Href="@($"/admin/posts/{post.Id}")">Edit</MudLink>
+                    &middot;
+                    <MudLink Href="@($"/post/{post.Slug}")">View</MudLink>
+                </td>
+            </tr>
+        }
         </tbody>
     </MudSimpleTable>
 }
 
 <form id="lock" method="post" @formname="lock" @onsubmit="LockAsync" class="mt-6">
-    <AntiforgeryToken />
-    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Lock">Lock</MudButton>
+    <AntiforgeryToken/>
+    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Lock">Lock
+    </MudButton>
 </form>
 
 @code {
@@ -72,8 +75,7 @@ else
     private int totalViews;
     private int totalVisitors;
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         posts = await Db.Posts
             .AsNoTracking()
             .OrderByDescending(p => p.UpdatedAt)
@@ -94,8 +96,7 @@ else
 
     private VisitStats StatsFor(int postId) => stats.GetValueOrDefault(postId) ?? new VisitStats(postId, 0, 0);
 
-    private async Task LockAsync()
-    {
+    private async Task LockAsync() {
         await HttpContext.SignOutAsync();
         Navigation.NavigateTo("/");
     }

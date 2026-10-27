@@ -41,7 +41,7 @@ export function apply(container, action) {
         return;
     }
 
-    const { selectionStart: start, selectionEnd: end, value } = textarea;
+    const {selectionStart: start, selectionEnd: end, value} = textarea;
     const selected = value.slice(start, end);
     let from = start, to = end, text, selectFrom, selectTo;
 
@@ -71,7 +71,7 @@ export function apply(container, action) {
 // Blocks go on their own lines, with a blank line before them; the selection (or placeholder) sits between before and
 // after, and is selected afterwards.
 function insertBlock(textarea, before, after, placeholder) {
-    const { selectionStart: start, selectionEnd: end, value } = textarea;
+    const {selectionStart: start, selectionEnd: end, value} = textarea;
     const inner = value.slice(start, end) || placeholder;
     const lead = start === 0 ? '' : value.slice(Math.max(0, start - 2), start) === '\n\n' ? '' : value[start - 1] === '\n' ? '\n' : '\n\n';
     const selectFrom = start + lead.length + before.length;
@@ -89,6 +89,6 @@ function replace(textarea, from, to, text, selectFrom, selectTo) {
     }
 
     textarea.setSelectionRange(selectFrom, selectTo);
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    textarea.dispatchEvent(new Event('input', {bubbles: true}));
+    textarea.dispatchEvent(new Event('change', {bubbles: true}));
 }

@@ -3,40 +3,38 @@
 <MudStack Spacing="2">
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
         <MudText Typo="Typo.subtitle2">Icon</MudText>
-        @if (Value is not null)
-        {
-            <MudIcon Icon="@IconCatalog.Get(Value)" Color="Color.Primary" />
+        @if (Value is not null) {
+            <MudIcon Icon="@IconCatalog.Get(Value)" Color="Color.Primary"/>
             <MudText Typo="Typo.body2" data-testid="selected-icon">@Value</MudText>
         }
-        else
-        {
+        else {
             <MudText Typo="Typo.body2" Class="mud-text-secondary">None selected</MudText>
         }
     </MudStack>
 
     <MudStack Row="true" Spacing="2">
-        <MudSelect T="string" Value="style" ValueChanged="StyleChanged" Label="Style" Dense="true" Style="max-width: 10rem">
-            @foreach (var s in IconCatalog.Styles)
-            {
+        <MudSelect T="string" Value="style" ValueChanged="StyleChanged" Label="Style" Dense="true"
+                   Style="max-width: 10rem">
+            @foreach (var s in IconCatalog.Styles) {
                 <MudSelectItem Value="@s">@s</MudSelectItem>
             }
         </MudSelect>
         <MudTextField T="string" @bind-Value="search" Label="Search icons" Immediate="true" DebounceInterval="250"
-                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Clearable="true" />
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Clearable="true"/>
     </MudStack>
 
     <div class="icon-grid">
-        @foreach (var key in Matches.Take(MaxShown))
-        {
+        @foreach (var key in Matches.Take(MaxShown)) {
             var selected = key == Value;
-            <MudIconButton Icon="@IconCatalog.Get(key)" title="@IconCatalog.NameOf(key)" aria-label="@IconCatalog.NameOf(key)"
+            <MudIconButton Icon="@IconCatalog.Get(key)" title="@IconCatalog.NameOf(key)"
+                           aria-label="@IconCatalog.NameOf(key)"
                            data-icon="@key" Color="@(selected ? Color.Primary : Color.Default)"
-                           Variant="@(selected ? Variant.Filled : Variant.Text)" OnClick="() => SelectAsync(key)" />
+                           Variant="@(selected ? Variant.Filled : Variant.Text)" OnClick="() => SelectAsync(key)"/>
         }
     </div>
 
     <MudText Typo="Typo.caption" Class="mud-text-secondary">
-        Showing @Math.Min(MaxShown, Matches.Count) of @Matches.Count @style icons@(string.IsNullOrWhiteSpace(search) ? "" : $" matching \"{search}\"").
+        Showing @Math.Min(MaxShown, Matches.Count) of @Matches.Count @style icons@(String.IsNullOrWhiteSpace(search) ? "" : $" matching \"{search}\"").
     </MudText>
 </MudStack>
 
@@ -54,18 +52,15 @@
 
     private List<string> Matches => IconCatalog.Search(style, search).ToList();
 
-    protected override void OnInitialized()
-    {
-        if (Value is not null && IconCatalog.Contains(Value))
-        {
+    protected override void OnInitialized() {
+        if (Value is not null && IconCatalog.Contains(Value)) {
             style = IconCatalog.StyleOf(Value);
         }
     }
 
     private void StyleChanged(string value) => style = value;
 
-    private async Task SelectAsync(string key)
-    {
+    private async Task SelectAsync(string key) {
         Value = key;
         await ValueChanged.InvokeAsync(key);
     }

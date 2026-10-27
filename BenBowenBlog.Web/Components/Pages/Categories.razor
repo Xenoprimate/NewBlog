@@ -6,41 +6,38 @@
 
 <h1 class="visually-hidden">Categories</h1>
 
-@if (categories.Count == 0)
-{
+@if (categories.Count == 0) {
     <MudText>No categories yet.</MudText>
 }
-else
-{
+else {
     <MudGrid Spacing="4">
-        @foreach (var category in categories)
-        {
+        @foreach (var category in categories) {
             <MudItem xs="12" md="6" Class="d-flex">
                 @* The title link is stretched over the whole card (see .stretched-link in app.css); the recent posts'
                    own links sit above it, so they open the post rather than the category. *@
                 <MudCard Outlined="true" Class="category-card flex-grow-1">
                     <MudCardHeader>
                         <CardHeaderAvatar>
-                            <MudIcon Icon="@IconCatalog.Get(category.Icon)" Color="Color.Primary" Size="Size.Large" />
+                            <MudIcon Icon="@IconCatalog.Get(category.Icon)" Color="Color.Primary" Size="Size.Large"/>
                         </CardHeaderAvatar>
                         <CardHeaderContent>
                             <MudText Typo="Typo.h5" HtmlTag="h2">
                                 <a class="stretched-link" href="@CategoryUrls.For(category.Name)">@category.Name</a>
                             </MudText>
-                            <MudText Typo="Typo.body2" Class="mud-text-secondary">@PostCount(category.PostCount)</MudText>
+                            <MudText Typo="Typo.body2"
+                                     Class="mud-text-secondary">@PostCount(category.PostCount)</MudText>
                         </CardHeaderContent>
                     </MudCardHeader>
                     <MudCardContent Class="pt-0">
                         <ul class="category-recent">
-                            @foreach (var post in category.Recent)
-                            {
+                            @foreach (var post in category.Recent) {
                                 <li>
                                     <a class="category-recent-title" href="@($"/post/{post.Slug}")">@post.Title</a>
                                     <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">
-                                        <time datetime="@post.PublishedAt.ToString("O")">@post.PublishedAt.ToString("d MMMM yyyy")</time>
+                                        <time
+                                            datetime="@post.PublishedAt.ToString("O")">@post.PublishedAt.ToString("d MMMM yyyy")</time>
                                     </MudText>
-                                    @if (post.Summary is not null)
-                                    {
+                                    @if (post.Summary is not null) {
                                         <MudText Typo="Typo.body2" Class="line-clamp-2">@post.Summary</MudText>
                                     }
                                 </li>
@@ -48,7 +45,9 @@ else
                         </ul>
                     </MudCardContent>
                     <MudCardActions Class="px-4 pb-4 mt-auto">
-                        <MudText Typo="Typo.body2" Color="Color.Primary">View all @PostCount(category.PostCount) &rarr;</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Primary">View
+                            all @PostCount(category.PostCount) &rarr;
+                        </MudText>
                     </MudCardActions>
                 </MudCard>
             </MudItem>
@@ -61,8 +60,7 @@ else
 
     private List<CategoryCard> categories = [];
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         // Categories without a published post are hidden; drafts never count.
         categories = await Db.Categories
             .AsNoTracking()

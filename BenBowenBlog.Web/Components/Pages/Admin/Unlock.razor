@@ -2,7 +2,7 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
-@inject AdminKey AdminKey
+@inject AdminKeyAuthenticator AdminKeyAuthenticator
 @inject NavigationManager Navigation
 
 <PageTitle>Unlock</PageTitle>
@@ -13,14 +13,16 @@
     @* A plain input rather than MudTextField: this page is a static form post, and MudBlazor's inputs need interactivity. *@
     <EditForm Model="Input" FormName="unlock" OnSubmit="UnlockAsync">
         <label for="key" class="admin-label">Key</label>
-        <InputText id="key" type="password" class="admin-input mb-4" autocomplete="current-password" @bind-Value="Input!.Key" />
+        <InputText id="key" type="password" class="admin-input mb-4" autocomplete="current-password"
+                   @bind-Value="Input!.Key"/>
 
-        @if (error is not null)
-        {
+        @if (error is not null) {
             <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@error</MudAlert>
         }
 
-        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">Unlock</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">
+            Unlock
+        </MudButton>
     </EditForm>
 </MudPaper>
 
@@ -38,10 +40,8 @@
 
     protected override void OnInitialized() => Input ??= new();
 
-    private async Task UnlockAsync()
-    {
-        switch (await AdminKey.VerifyAsync(Input!.Key, HttpContext.RequestAborted))
-        {
+    private async Task UnlockAsync() {
+        switch (await AdminKeyAuthenticator.VerifyAsync(Input!.Key, HttpContext.RequestAborted)) {
             case AdminKeyResult.Valid:
                 var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "admin")], CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
@@ -60,10 +60,10 @@
 
     // Only redirect to paths on this site, never to "//evil.example" or "/\\evil.example".
     private static bool IsLocalUrl(string? url) =>
-        url is { Length: > 0 } && url[0] == '/' && (url.Length == 1 || (url[1] != '/' && url[1] != '\\'));
+        url is {Length: > 0} && url[0] == '/' && (url.Length == 1 || url[1] != '/' && url[1] != '\\');
 
-    private sealed class UnlockInput
-    {
+    private sealed class UnlockInput {
         public string? Key { get; set; }
     }
+
 }

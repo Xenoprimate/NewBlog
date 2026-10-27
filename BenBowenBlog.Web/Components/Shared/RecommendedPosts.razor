@@ -1,18 +1,14 @@
-﻿@if (!Set.IsEmpty)
-{
+﻿@if (!Set.IsEmpty) {
     <section class="recommended" aria-label="More posts">
-        @if (Set.Previous is not null || Set.Next is not null)
-        {
+        @if (Set.Previous is not null || Set.Next is not null) {
             <div class="series-links">
-                @if (Set.Previous is { } previous)
-                {
+                @if (Set.Previous is { } previous) {
                     <a class="series-link" href="@($"/post/{previous.Slug}")">
                         <span class="series-label">&larr; Previous</span>
                         <span class="series-title">@previous.Title</span>
                     </a>
                 }
-                @if (Set.Next is { } next)
-                {
+                @if (Set.Next is { } next) {
                     <a class="series-link series-link-next" href="@($"/post/{next.Slug}")">
                         <span class="series-label">Next &rarr;</span>
                         <span class="series-title">@next.Title</span>
@@ -21,21 +17,20 @@
             </div>
         }
 
-        @if (Set.Recommended.Count > 0)
-        {
+        @if (Set.Recommended.Count > 0) {
             <MudText Typo="Typo.subtitle1" HtmlTag="h2" Class="mb-2">Recommended posts</MudText>
             <ul class="recommended-list">
-                @foreach (var post in Set.Recommended)
-                {
+                @foreach (var post in Set.Recommended) {
                     <li>
                         <a href="@($"/post/{post.Slug}")">
-                            @if (post.CoverImage is not null)
-                            {
-                                <img class="recommended-thumb" src="@MediaStore.UrlFor(post.CoverImage)" alt="" loading="lazy" />
+                            @if (post.CoverImage is not null) {
+                                <img class="recommended-thumb" src="@MediaStore.UrlFor(post.CoverImage)" alt=""
+                                     loading="lazy"/>
                             }
                             <span class="recommended-text">
                                 <span class="recommended-title">@post.Title</span>
-                                <span class="recommended-date mud-text-secondary">@post.PublishedAt.ToString("d MMMM yyyy")</span>
+                                <span
+                                    class="recommended-date mud-text-secondary">@post.PublishedAt.ToString("d MMMM yyyy")</span>
                             </span>
                         </a>
                     </li>

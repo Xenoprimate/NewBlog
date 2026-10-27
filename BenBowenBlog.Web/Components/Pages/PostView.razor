@@ -1,16 +1,14 @@
 ﻿@page "/post/{Slug}"
 @inject BlogDbContext Db
 @inject NavigationManager Navigation
-@inject BenBowenBlog.Web.Metrics.PostViewRecorder ViewRecorder
+@inject Metrics.PostViewRecorder ViewRecorder
 
-@if (post is not null && rendered is not null && recommendations is not null)
-{
+@if (post is not null && rendered is not null && recommendations is not null) {
     <PageTitle>@post.Title</PageTitle>
 
-    @if (post.Summary is not null)
-    {
+    @if (post.Summary is not null) {
         <HeadContent>
-            <meta name="description" content="@post.Summary" />
+            <meta name="description" content="@post.Summary"/>
         </HeadContent>
     }
 
@@ -18,50 +16,47 @@
        article shows its own cover on top and the recommendations at the bottom instead (see .post-page in app.css). *@
     <div class="post-page" id="post-top">
         <aside class="post-sidebar">
-            @if (post.CoverImage is not null)
-            {
-                <img class="post-sidebar-cover" src="@MediaStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
+            @if (post.CoverImage is not null) {
+                <img class="post-sidebar-cover" src="@MediaStore.UrlFor(post.CoverImage)"
+                     alt="@(post.CoverImageAlt ?? "")"/>
             }
             <div class="post-sidebar-sticky">
-                <TableOfContents Entries="rendered.TableOfContents" PagePath="@($"/post/{post.Slug}")" />
-                <RecommendedPosts Set="recommendations" />
+                <TableOfContents Entries="rendered.TableOfContents" PagePath="@($"/post/{post.Slug}")"/>
+                <RecommendedPosts Set="recommendations"/>
             </div>
         </aside>
 
         <div class="post-main">
-            @if (post.PublishedAt is null)
-            {
+            @if (post.PublishedAt is null) {
                 <MudAlert Severity="Severity.Warning" Class="mb-4">Draft: not published.</MudAlert>
             }
 
             <article>
-                @if (post.CoverImage is not null)
-                {
-                    <img class="post-cover post-cover-inline" src="@MediaStore.UrlFor(post.CoverImage)" alt="@(post.CoverImageAlt ?? "")" />
+                @if (post.CoverImage is not null) {
+                    <img class="post-cover post-cover-inline" src="@MediaStore.UrlFor(post.CoverImage)"
+                         alt="@(post.CoverImageAlt ?? "")"/>
                 }
 
                 <MudText Typo="Typo.h3" HtmlTag="h1" Class="mb-2">@post.Title</MudText>
 
                 <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="1" Class="mb-6">
-                    <CategoryLabel Name="@post.Category!.Name" Icon="@post.Category.Icon" />
-                    @if (post.PublishedAt is { } published)
-                    {
+                    <CategoryLabel Name="@post.Category!.Name" Icon="@post.Category.Icon"/>
+                    @if (post.PublishedAt is { } published) {
                         <MudText Typo="Typo.body2" Class="mud-text-secondary mx-2">
                             <time datetime="@published.ToString("O")">@published.ToString("d MMMM yyyy")</time>
                         </MudText>
                     }
-                    <TagChips Tags="post.Tags" />
+                    <TagChips Tags="post.Tags"/>
                 </MudStack>
 
-                @if (post.Errata.Count > 0)
-                {
+                @if (post.Errata.Count > 0) {
                     <aside class="errata" aria-labelledby="errata-heading">
                         <MudText Typo="Typo.h6" HtmlTag="h2" id="errata-heading" Class="mb-2">Errata</MudText>
                         <ul>
-                            @foreach (var erratum in post.Errata.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id))
-                            {
+                            @foreach (var erratum in post.Errata.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id)) {
                                 <li>
-                                    <time class="errata-date" datetime="@erratum.Date.ToString("yyyy-MM-dd")">@erratum.Date.ToString("d MMMM yyyy")</time>
+                                    <time class="errata-date"
+                                          datetime="@erratum.Date.ToString("yyyy-MM-dd")">@erratum.Date.ToString("d MMMM yyyy")</time>
                                     <div class="errata-text">@PostMarkdown.ToHtml(erratum.Text)</div>
                                 </li>
                             }
@@ -74,16 +69,16 @@
                 </div>
             </article>
 
-            @if (isAdmin)
-            {
-                <MudButton Href="@($"/admin/posts/{post.Id}")" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Class="mt-6">Edit</MudButton>
+            @if (isAdmin) {
+                <MudButton Href="@($"/admin/posts/{post.Id}")" Variant="Variant.Outlined"
+                           StartIcon="@Icons.Material.Filled.Edit" Class="mt-6">Edit
+                </MudButton>
             }
 
-            @if (!recommendations.IsEmpty)
-            {
+            @if (!recommendations.IsEmpty) {
                 <div class="post-bottom-recommendations">
-                    <MudDivider Class="my-8" />
-                    <RecommendedPosts Set="recommendations" />
+                    <MudDivider Class="my-8"/>
+                    <RecommendedPosts Set="recommendations"/>
                 </div>
             }
         </div>
@@ -105,8 +100,7 @@
     private PostRecommendationSet? recommendations;
     private bool isAdmin;
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         isAdmin = AuthenticationState is not null && (await AuthenticationState).User.Identity?.IsAuthenticated == true;
 
         // Drafts are only visible to an unlocked admin (as a preview); everyone else gets a 404.
@@ -116,8 +110,7 @@
             .Include(p => p.Errata)
             .FirstOrDefaultAsync(p => p.Slug == Slug && (isAdmin || p.PublishedAt != null));
 
-        if (post is null)
-        {
+        if (post is null) {
             Navigation.NotFound();
             return;
         }
@@ -126,8 +119,7 @@
         recommendations = await PostRecommender.GetAsync(Db, post);
 
         // Private metrics: only published posts; the recorder also skips admins, bots and prefetches.
-        if (post.PublishedAt is not null && HttpContext is not null)
-        {
+        if (post.PublishedAt is not null && HttpContext is not null) {
             ViewRecorder.Record(HttpContext, post.Id);
         }
     }

@@ -12,48 +12,52 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<MudInteractiveProviders />
+<MudInteractiveProviders/>
 
 <PageTitle>@(Id is null ? "New post" : "Edit post")</PageTitle>
 
-<AdminNav />
+<AdminNav/>
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
     <MudText Typo="Typo.h4" HtmlTag="h1">@(Id is null ? "New post" : "Edit post")</MudText>
-    @if (savedSlug is not null)
-    {
-        <MudButton Href="@($"/post/{savedSlug}")" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility">View post</MudButton>
+    @if (savedSlug is not null) {
+        <MudButton Href="@($"/post/{savedSlug}")" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Visibility">View post
+        </MudButton>
     }
 </MudStack>
 
-@if (notFound)
-{
-    <MudAlert Severity="Severity.Warning">Post not found. <MudLink Href="/admin/posts">Back to all posts</MudLink></MudAlert>
+@if (notFound) {
+    <MudAlert Severity="Severity.Warning">Post not found.
+        <MudLink Href="/admin/posts">Back to all posts</MudLink>
+    </MudAlert>
 }
-else if (model is null || editContext is null || categories is null)
-{
-    <MudProgressLinear Indeterminate="true" />
+else if (model is null || editContext is null || categories is null) {
+    <MudProgressLinear Indeterminate="true"/>
 }
-else if (categories.Count == 0)
-{
-    <MudAlert Severity="Severity.Info">Every post needs a category. <MudLink Href="/admin/categories">Create a category first</MudLink>.</MudAlert>
+else if (categories.Count == 0) {
+    <MudAlert Severity="Severity.Info">Every post needs a category.
+        <MudLink Href="/admin/categories">Create a category first</MudLink>
+        .
+    </MudAlert>
 }
-else
-{
+else {
     <EditForm EditContext="editContext" OnValidSubmit="SaveAsync">
-        <DataAnnotationsValidator />
+        <DataAnnotationsValidator/>
 
         <MudStack Spacing="4">
-            <MudTextField T="string" Label="Title" Value="model.Title" ValueChanged="TitleChanged" For="() => model.Title" />
+            <MudTextField T="string" Label="Title" Value="model.Title" ValueChanged="TitleChanged"
+                          For="() => model.Title"/>
 
-            <MudTextField T="string" Label="Slug" Value="model.Slug" ValueChanged="SlugChanged" For="() => model.Slug" Class="slug-field" />
+            <MudTextField T="string" Label="Slug" Value="model.Slug" ValueChanged="SlugChanged" For="() => model.Slug"
+                          Class="slug-field"/>
 
-            <MudSelect T="int?" Label="Category" @bind-Value="model.CategoryId" For="() => model.CategoryId" AnchorOrigin="Origin.BottomCenter">
-                @foreach (var category in categories)
-                {
+            <MudSelect T="int?" Label="Category" @bind-Value="model.CategoryId" For="() => model.CategoryId"
+                       AnchorOrigin="Origin.BottomCenter">
+                @foreach (var category in categories) {
                     <MudSelectItem T="int?" Value="@category.Id">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudIcon Icon="@IconCatalog.Get(category.Icon)" Size="Size.Small" />
+                            <MudIcon Icon="@IconCatalog.Get(category.Icon)" Size="Size.Small"/>
                             <span>@category.Name</span>
                         </MudStack>
                     </MudSelectItem>
@@ -61,24 +65,28 @@ else
             </MudSelect>
 
             <div>
-                <MudAutocomplete T="int?" Label="Previous post (series)" @bind-Value="model.PreviousPostId" For="() => model.PreviousPostId"
-                                 SearchFunc="SearchPostsAsync" ToStringFunc="PostTitle" Clearable="true" ResetValueOnEmptyText="true"
-                                 CoerceText="true" HelperText="The post this one follows in a series. The next post is set in that post's own editor." />
-                @if (nextPostTitle is not null)
-                {
+                <MudAutocomplete T="int?" Label="Previous post (series)" @bind-Value="model.PreviousPostId"
+                                 For="() => model.PreviousPostId"
+                                 SearchFunc="SearchPostsAsync" ToStringFunc="PostTitle" Clearable="true"
+                                 ResetValueOnEmptyText="true"
+                                 CoerceText="true"
+                                 HelperText="The post this one follows in a series. The next post is set in that post's own editor."/>
+                @if (nextPostTitle is not null) {
                     <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">Next post: @nextPostTitle</MudText>
                 }
             </div>
 
             <div>
-                <MudTextField T="string" Label="Tags" @bind-Value="model.TagsText" For="() => model.TagsText" Immediate="true"
-                              HelperText="Comma-separated; each becomes a lowercase slug" />
+                <MudTextField T="string" Label="Tags" @bind-Value="model.TagsText" For="() => model.TagsText"
+                              Immediate="true"
+                              HelperText="Comma-separated; each becomes a lowercase slug"/>
                 <div class="mt-1" data-testid="tag-preview">
-                    <TagChips Tags="Tags.Normalize(model.TagsText)" OnRemove="RemoveTag" />
+                    <TagChips Tags="TagTransformer.Normalize(model.TagsText)" OnRemove="RemoveTag"/>
                 </div>
             </div>
 
-            <MudTextField T="string" Label="Summary" @bind-Value="model.Summary" For="() => model.Summary" Lines="2" Sizing="InputSizing.Auto" />
+            <MudTextField T="string" Label="Summary" @bind-Value="model.Summary" For="() => model.Summary" Lines="2"
+                          Sizing="InputSizing.Auto"/>
 
             @* Only the active tab renders, so the preview is rendered when you switch to it; leaving the text box commits
                its value first, so it always reflects what you just typed. *@
@@ -87,136 +95,139 @@ else
                 <Header Context="tabs">
                     @* Formatting shortcuts: they insert Markdown at the cursor (or around the selection) in the Write tab. *@
                     <div class="markdown-toolbar" role="toolbar" aria-label="Markdown formatting">
-                        @foreach (var tool in MarkdownTools)
-                        {
-                            if (tool.Action is null)
-                            {
+                        @foreach (var tool in MarkdownTools) {
+                            if (tool.Action is null) {
                                 <span class="markdown-toolbar-divider" aria-hidden="true"></span>
                             }
-                            else if (tool.Action == "image")
-                            {
+                            else if (tool.Action == "image") {
                                 @* The image button lists the most recently added images from the media library, plus a
                                    blank template; the list is loaded each time it opens, so new uploads appear. *@
-                                <MudMenu Icon="@tool.Icon" Size="Size.Small" Dense="true" Disabled="editorTab != 0" AriaLabel="@tool.Label"
-                                         title="@tool.Label" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                                <MudMenu Icon="@tool.Icon" Size="Size.Small" Dense="true" Disabled="editorTab != 0"
+                                         AriaLabel="@tool.Label"
+                                         title="@tool.Label" AnchorOrigin="Origin.BottomRight"
+                                         TransformOrigin="Origin.TopRight"
                                          OpenChanged="ImageMenuOpenChangedAsync" ListClass="image-menu">
-                                    @if (recentImages is null)
-                                    {
+                                    @if (recentImages is null) {
                                         <MudMenuItem Disabled="true">Loading...</MudMenuItem>
                                     }
-                                    else
-                                    {
-                                        @foreach (var image in recentImages)
-                                        {
+                                    else {
+                                        @foreach (var image in recentImages) {
                                             <MudMenuItem OnClick="() => InsertImageAsync(image)">
                                                 <span class="image-menu-item">
-                                                    <img src="@image.Url" alt="" />
+                                                    <img src="@image.Url" alt=""/>
                                                     <span class="image-menu-name">@image.DisplayName</span>
                                                 </span>
                                             </MudMenuItem>
                                         }
-                                        <MudMenuItem OnClick="@(() => ApplyMarkdownAsync("image"))" Icon="@Icons.Material.Filled.AddPhotoAlternate">
+                                        <MudMenuItem OnClick="@(() => ApplyMarkdownAsync("image"))"
+                                                     Icon="@Icons.Material.Filled.AddPhotoAlternate">
                                             Blank image
                                         </MudMenuItem>
                                     }
                                 </MudMenu>
                             }
-                            else
-                            {
-                                <MudIconButton Icon="@tool.Icon" Size="Size.Small" title="@tool.Label" aria-label="@tool.Label"
-                                               Disabled="editorTab != 0" OnClick="() => ApplyMarkdownAsync(tool.Action)" />
+                            else {
+                                <MudIconButton Icon="@tool.Icon" Size="Size.Small" title="@tool.Label"
+                                               aria-label="@tool.Label"
+                                               Disabled="editorTab != 0"
+                                               OnClick="() => ApplyMarkdownAsync(tool.Action)"/>
                             }
                         }
                     </div>
                 </Header>
                 <ChildContent>
-                <MudTabPanel Text="Write" Icon="@Icons.Material.Filled.Edit">
-                    <div @ref="bodyEditor">
-                        <MudTextField T="string" Label="Body (Markdown)" @bind-Value="model.Body" For="() => model.Body" Lines="20" Class="body-field" />
-                    </div>
-                </MudTabPanel>
-                <MudTabPanel Text="Preview" Icon="@Icons.Material.Filled.Visibility">
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">Preview of the post body. Cover, title and sidebar aren't shown.</MudText>
-                    @if (string.IsNullOrWhiteSpace(model.Body))
-                    {
-                        <MudText Class="mud-text-secondary">Nothing to preview yet.</MudText>
-                    }
-                    else
-                    {
-                        <div class="post-body editor-preview">@PostMarkdown.Render(model.Body).Html</div>
-                    }
-                </MudTabPanel>
+                    <MudTabPanel Text="Write" Icon="@Icons.Material.Filled.Edit">
+                        <div @ref="bodyEditor">
+                            <MudTextField T="string" Label="Body (Markdown)" @bind-Value="model.Body"
+                                          For="() => model.Body" Lines="20" Class="body-field"/>
+                        </div>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Preview" Icon="@Icons.Material.Filled.Visibility">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-2">Preview of the post body.
+                            Cover, title and sidebar aren't shown.
+                        </MudText>
+                        @if (String.IsNullOrWhiteSpace(model.Body)) {
+                            <MudText Class="mud-text-secondary">Nothing to preview yet.</MudText>
+                        }
+                        else {
+                            <div class="post-body editor-preview">@PostMarkdown.Render(model.Body).Html</div>
+                        }
+                    </MudTabPanel>
                 </ChildContent>
             </MudTabs>
 
             <MudPaper Outlined="true" Class="pa-4">
                 <MudText Typo="Typo.subtitle1" Class="mb-2">Cover image</MudText>
 
-                @if (pendingCover is not null)
-                {
+                @if (pendingCover is not null) {
                     <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
-                        Selected @pendingCover.FileName (@FormatSize(pendingCover.Data.Length)); it's uploaded when you save.
+                        Selected @pendingCover.FileName (@FormatSize(pendingCover.Data.Length)); it's uploaded when you
+                        save.
                     </MudAlert>
                 }
-                else if (coverImage is not null && !removeCover)
-                {
-                    <img class="cover-preview mb-2" src="@MediaStore.UrlFor(coverImage)" alt="Current cover image" />
+                else if (coverImage is not null && !removeCover) {
+                    <img class="cover-preview mb-2" src="@MediaStore.UrlFor(coverImage)" alt="Current cover image"/>
                 }
-                else
-                {
+                else {
                     <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">No cover image.</MudText>
                 }
 
                 <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                    <MudFileUpload T="IBrowserFile" FilesChanged="CoverSelectedAsync" Accept=".jpg,.jpeg,.png,.gif,.webp">
+                    <MudFileUpload T="IBrowserFile" FilesChanged="CoverSelectedAsync"
+                                   Accept=".jpg,.jpeg,.png,.gif,.webp">
                         <CustomContent Context="upload">
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Image" OnClick="upload.OpenFilePickerAsync">Choose image</MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Image"
+                                       OnClick="upload.OpenFilePickerAsync">Choose image
+                            </MudButton>
                         </CustomContent>
                         <SelectedTemplate Context="file"></SelectedTemplate>
                     </MudFileUpload>
-                    @if (pendingCover is not null || (coverImage is not null && !removeCover))
-                    {
+                    @if (pendingCover is not null || coverImage is not null && !removeCover) {
                         <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="RemoveCover">Remove</MudButton>
                     }
                 </MudStack>
 
-                @if (coverError is not null)
-                {
+                @if (coverError is not null) {
                     <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2" role="alert">@coverError</MudText>
                 }
 
-                <MudTextField T="string" Label="Cover alt text" @bind-Value="model.CoverImageAlt" For="() => model.CoverImageAlt" Class="mt-2"
-                              HelperText="Describes the image for screen readers" />
+                <MudTextField T="string" Label="Cover alt text" @bind-Value="model.CoverImageAlt"
+                              For="() => model.CoverImageAlt" Class="mt-2"
+                              HelperText="Describes the image for screen readers"/>
             </MudPaper>
 
             <MudPaper Outlined="true" Class="pa-4">
                 <MudText Typo="Typo.subtitle1" Class="mb-2">Errata</MudText>
 
-                @if (model.Errata.Count == 0)
-                {
+                @if (model.Errata.Count == 0) {
                     <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">No errata.</MudText>
                 }
 
-                @foreach (var erratum in model.Errata)
-                {
+                @foreach (var erratum in model.Errata) {
                     <div class="erratum-row">
-                        <MudDatePicker @bind-Date="erratum.Date" Label="Date" DateFormat="d MMM yyyy" Class="erratum-date" />
-                        <MudTextField T="string" @bind-Value="erratum.Text" Label="Note" HelperText="Markdown supported" Lines="2" Class="flex-grow-1" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Remove erratum" title="Remove erratum"
-                                       OnClick="() => model.Errata.Remove(erratum)" />
+                        <MudDatePicker @bind-Date="erratum.Date" Label="Date" DateFormat="d MMM yyyy"
+                                       Class="erratum-date"/>
+                        <MudTextField T="string" @bind-Value="erratum.Text" Label="Note" HelperText="Markdown supported"
+                                      Lines="2" Class="flex-grow-1"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                       aria-label="Remove erratum" title="Remove erratum"
+                                       OnClick="() => model.Errata.Remove(erratum)"/>
                     </div>
                 }
 
-                <ValidationMessage For="() => model.Errata" />
+                <ValidationMessage For="() => model.Errata"/>
 
                 <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add" Class="mt-1"
-                           OnClick="() => model.Errata.Add(new ErratumEditModel { Date = DateTime.Today })">Add erratum</MudButton>
+                           OnClick="() => model.Errata.Add(new ErratumEditModel { Date = DateTime.Today })">Add erratum
+                </MudButton>
             </MudPaper>
 
-            <MudSwitch T="bool" @bind-Value="model.IsPublished" Label="Published" Color="Color.Primary" />
+            <MudSwitch T="bool" @bind-Value="model.IsPublished" Label="Published" Color="Color.Primary"/>
 
             <div>
-                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="saving">Save</MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                           Disabled="saving">Save
+                </MudButton>
             </div>
         </MudStack>
     </EditForm>
@@ -254,10 +265,8 @@ else
 
     // Enhanced navigation (e.g. /admin/posts/new -> /admin/posts/5 after creating) can reuse this component
     // with a new Id, so load whenever the Id changes rather than only once.
-    protected override async Task OnParametersSetAsync()
-    {
-        if (loaded && Id == loadedId)
-        {
+    protected override async Task OnParametersSetAsync() {
+        if (loaded && Id == loadedId) {
             return;
         }
 
@@ -293,16 +302,14 @@ else
             ? null
             : await db.Posts.Where(p => p.PreviousPostId == Id).Select(p => p.Title).FirstOrDefaultAsync();
 
-        if (Id is null)
-        {
+        if (Id is null) {
             SetModel(new PostEditModel());
             return;
         }
 
         var post = await db.Posts.AsNoTracking().Include(p => p.Errata).FirstOrDefaultAsync(p => p.Id == Id);
 
-        if (post is null)
-        {
+        if (post is null) {
             notFound = true;
             model = null;
             editContext = null;
@@ -314,66 +321,55 @@ else
         SetModel(PostEditModel.FromPost(post));
     }
 
-    private void SetModel(PostEditModel newModel)
-    {
+    private void SetModel(PostEditModel newModel) {
         model = newModel;
         editContext = new EditContext(model);
         messages = new ValidationMessageStore(editContext);
-        editContext.OnFieldChanged += (_, e) =>
-        {
-            if (e.FieldIdentifier.FieldName == nameof(PostEditModel.Slug))
-            {
+        editContext.OnFieldChanged += (_, e) => {
+            if (e.FieldIdentifier.FieldName == nameof(PostEditModel.Slug)) {
                 messages.Clear(e.FieldIdentifier);
             }
         };
     }
 
-    private void TitleChanged(string? value)
-    {
+    private void TitleChanged(string? value) {
         model!.Title = value ?? "";
         editContext!.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.Title)));
 
         // On new posts the slug follows the title until it's edited by hand.
-        if (Id is null && !slugEdited)
-        {
-            model.Slug = Slugs.FromTitle(model.Title);
+        if (Id is null && !slugEdited) {
+            model.Slug = SlugTransformer.FromTitle(model.Title);
             editContext.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.Slug)));
         }
     }
 
-    private void SlugChanged(string? value)
-    {
+    private void SlugChanged(string? value) {
         model!.Slug = value ?? "";
         slugEdited = true;
         editContext!.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.Slug)));
     }
 
-    private async Task CoverSelectedAsync(IBrowserFile? file)
-    {
+    private async Task CoverSelectedAsync(IBrowserFile? file) {
         coverError = null;
 
-        if (file is null)
-        {
+        if (file is null) {
             return;
         }
 
-        if (file.Size > PostLimits.CoverImageMaxBytes)
-        {
-            coverError = $"That file is {FormatSize(file.Size)}; the limit is {FormatSize(PostLimits.CoverImageMaxBytes)}.";
+        if (file.Size > Post.CoverImageMaxBytes) {
+            coverError = $"That file is {FormatSize(file.Size)}; the limit is {FormatSize(Post.CoverImageMaxBytes)}.";
             return;
         }
 
         using var buffer = new MemoryStream();
-        await using (var stream = file.OpenReadStream(PostLimits.CoverImageMaxBytes))
-        {
+        await using (var stream = file.OpenReadStream(Post.CoverImageMaxBytes)) {
             await stream.CopyToAsync(buffer);
         }
 
         var data = buffer.ToArray();
         var format = MediaStore.DetectFormat(data);
 
-        if (format is null)
-        {
+        if (format is null) {
             coverError = "That isn't a JPEG, PNG, GIF or WebP image.";
             return;
         }
@@ -381,45 +377,38 @@ else
         pendingCover = new PendingCover(file.Name, data, format);
     }
 
-    private void RemoveCover()
-    {
+    private void RemoveCover() {
         pendingCover = null;
         removeCover = coverImage is not null;
         coverError = null;
     }
 
-    private async Task SaveAsync()
-    {
+    private async Task SaveAsync() {
         // A fast double-click can submit twice before the disabled button reaches the browser.
-        if (saving)
-        {
+        if (saving) {
             return;
         }
 
         saving = true;
         string? uploaded = null;
 
-        try
-        {
+        try {
             await using var scope = ScopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
             var currentId = Id ?? 0;
 
-            if (await db.Posts.AnyAsync(p => p.Slug == model!.Slug && p.Id != currentId))
-            {
+            if (await db.Posts.AnyAsync(p => p.Slug == model!.Slug && p.Id != currentId)) {
                 ShowSlugTaken();
                 return;
             }
 
-            if (await ValidatePreviousPostAsync(db, currentId) is { } previousPostError)
-            {
+            if (await ValidatePreviousPostAsync(db, currentId) is { } previousPostError) {
                 ShowFieldError(nameof(PostEditModel.PreviousPostId), previousPostError);
                 return;
             }
 
             // Upload first, so a failed upload changes nothing; a failed save then deletes the upload (finally).
-            if (pendingCover is not null)
-            {
+            if (pendingCover is not null) {
                 uploaded = await Store.UploadAsync(pendingCover.Data, pendingCover.Format, pendingCover.FileName);
             }
 
@@ -427,18 +416,15 @@ else
             var now = DateTimeOffset.UtcNow;
             Post post;
 
-            if (Id is null)
-            {
+            if (Id is null) {
                 post = model!.CreatePost(now);
                 db.Posts.Add(post);
             }
-            else
-            {
+            else {
                 // Errata are loaded so ApplyTo can replace them.
                 var existing = await db.Posts.Include(p => p.Errata).FirstOrDefaultAsync(p => p.Id == Id.Value);
 
-                if (existing is null)
-                {
+                if (existing is null) {
                     notFound = true;
                     return;
                 }
@@ -457,34 +443,27 @@ else
             removeCover = false;
             savedSlug = post.Slug;
 
-            if (replaced is not null)
-            {
+            if (replaced is not null) {
                 await DeleteCoverQuietlyAsync(replaced);
             }
 
             Snackbar.Add("Post saved", Severity.Success);
 
-            if (Id is null)
-            {
+            if (Id is null) {
                 Navigation.NavigateTo($"/admin/posts/{post.Id}", replace: true);
             }
         }
         // The check above can still race with another save; the unique index has the final say.
-        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } unique)
-        {
-            if (unique.ConstraintName == "IX_Posts_PreviousPostId")
-            {
+        catch (DbUpdateException e) when (e.InnerException is PostgresException {SqlState: PostgresErrorCodes.UniqueViolation} unique) {
+            if (unique.ConstraintName == "IX_Posts_PreviousPostId") {
                 ShowFieldError(nameof(PostEditModel.PreviousPostId), "Another post already follows that post.");
             }
-            else
-            {
+            else {
                 ShowSlugTaken();
             }
         }
-        finally
-        {
-            if (uploaded is not null)
-            {
+        finally {
+            if (uploaded is not null) {
                 await DeleteCoverQuietlyAsync(uploaded);
             }
 
@@ -493,22 +472,18 @@ else
     }
 
     // Leftover blobs only waste storage, so a failed delete is logged rather than shown to the user.
-    private async Task DeleteCoverQuietlyAsync(string name)
-    {
-        try
-        {
+    private async Task DeleteCoverQuietlyAsync(string name) {
+        try {
             await Store.DeleteAsync(name);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             Logger.LogWarning(e, "Couldn't delete cover image {Name}", name);
         }
     }
 
     private void ShowSlugTaken() => ShowFieldError(nameof(PostEditModel.Slug), "Slug already in use.");
 
-    private void ShowFieldError(string fieldName, string message)
-    {
+    private void ShowFieldError(string fieldName, string message) {
         var field = editContext!.Field(fieldName);
         messages!.Clear(field);
         messages.Add(field, message);
@@ -517,25 +492,20 @@ else
 
     // A series is a simple chain: no post follows itself, following can't loop back round, and at most one post
     // follows any given post (also enforced by a unique index).
-    private async Task<string?> ValidatePreviousPostAsync(BlogDbContext db, int currentId)
-    {
-        if (model!.PreviousPostId is not { } previousId)
-        {
+    private async Task<string?> ValidatePreviousPostAsync(BlogDbContext db, int currentId) {
+        if (model!.PreviousPostId is not { } previousId) {
             return null;
         }
 
-        if (previousId == currentId)
-        {
+        if (previousId == currentId) {
             return "A post can't follow itself.";
         }
 
         var links = await db.Posts.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PreviousPostId);
         var visited = new HashSet<int>();
 
-        for (int? cursor = previousId; cursor is { } id && visited.Add(id); cursor = links.GetValueOrDefault(id))
-        {
-            if (id == currentId)
-            {
+        for (int? cursor = previousId; cursor is { } id && visited.Add(id); cursor = links.GetValueOrDefault(id)) {
+            if (id == currentId) {
                 return "That would make the series loop back to this post.";
             }
         }
@@ -550,8 +520,8 @@ else
 
     private Task<IEnumerable<int?>> SearchPostsAsync(string? text, CancellationToken cancellationToken) =>
         Task.FromResult(otherPosts
-            .Where(p => string.IsNullOrWhiteSpace(text) || p.Title.Contains(text.Trim(), StringComparison.OrdinalIgnoreCase))
-            .Select(p => (int?)p.Id));
+            .Where(p => String.IsNullOrWhiteSpace(text) || p.Title.Contains(text.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(p => (int?) p.Id));
 
     private string? PostTitle(int? id) =>
         otherPosts.FirstOrDefault(p => p.Id == id) is { } post ? post.IsDraft ? $"{post.Title} (draft)" : post.Title : null;
@@ -559,31 +529,26 @@ else
     private static string FormatSize(long bytes) =>
         bytes >= 1024 * 1024 ? $"{bytes / (1024.0 * 1024.0):0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
 
-    private void RemoveTag(string tag)
-    {
-        model!.TagsText = string.Join(", ", Tags.Normalize(model.TagsText).Where(t => t != tag));
+    private void RemoveTag(string tag) {
+        model!.TagsText = String.Join(", ", TagTransformer.Normalize(model.TagsText).Where(t => t != tag));
         editContext!.NotifyFieldChanged(editContext.Field(nameof(PostEditModel.TagsText)));
     }
 
-    private async Task ApplyMarkdownAsync(string action)
-    {
+    private async Task ApplyMarkdownAsync(string action) {
         var toolbar = await GetMarkdownToolbarAsync();
         await toolbar.InvokeVoidAsync("apply", bodyEditor, action);
     }
 
     private const int RecentImageCount = 5;
 
-    private async Task ImageMenuOpenChangedAsync(bool open)
-    {
-        if (open)
-        {
+    private async Task ImageMenuOpenChangedAsync(bool open) {
+        if (open) {
             recentImages = null;
             recentImages = (await Store.ListAsync()).Take(RecentImageCount).ToList();
         }
     }
 
-    private async Task InsertImageAsync(MediaItem image)
-    {
+    private async Task InsertImageAsync(MediaItem image) {
         // Square brackets would end the alt text early, so they're dropped.
         var alt = Path.GetFileNameWithoutExtension(image.DisplayName).Replace("[", "").Replace("]", "");
         var toolbar = await GetMarkdownToolbarAsync();
@@ -595,24 +560,19 @@ else
     private async Task<IJSObjectReference> GetMarkdownToolbarAsync() =>
         markdownToolbar ??= await JS.InvokeAsync<IJSObjectReference>("import", "/" + Assets["js/markdown-toolbar.js"]);
 
-    public async ValueTask DisposeAsync()
-    {
-        if (markdownToolbar is not null)
-        {
-            try
-            {
+    public async ValueTask DisposeAsync() {
+        if (markdownToolbar is not null) {
+            try {
                 await markdownToolbar.DisposeAsync();
             }
-            catch (JSDisconnectedException)
-            {
+            catch (JSDisconnectedException) {
                 // The circuit is already gone (e.g. the tab was closed); nothing to clean up.
             }
         }
     }
 
     // A null action draws a divider between groups.
-    private static readonly MarkdownTool[] MarkdownTools =
-    [
+    private static readonly MarkdownTool[] MarkdownTools = [
         new("Bold", Icons.Material.Filled.FormatBold, "bold"),
         new("Italic", Icons.Material.Filled.FormatItalic, "italic"),
         new("Heading", Icons.Material.Filled.Title, "heading"),

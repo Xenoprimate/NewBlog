@@ -1,13 +1,10 @@
-﻿@foreach (var tag in Tags)
-{
-    if (OnRemove.HasDelegate)
-    {
+﻿@foreach (var tag in Tags) {
+    if (OnRemove.HasDelegate) {
         @* Editing (e.g. the post editor's tag preview): clicking a chip removes the tag rather than opening its page. *@
         <MudChip T="string" Size="Size.Small" Variant="Variant.Text" title="Remove tag"
                  OnClick="() => OnRemove.InvokeAsync(tag)" OnClose="_ => OnRemove.InvokeAsync(tag)">#@tag</MudChip>
     }
-    else
-    {
+    else {
         <MudChip T="string" Href="@TagUrls.For(tag)" Size="Size.Small" Variant="Variant.Text">#@tag</MudChip>
     }
 }

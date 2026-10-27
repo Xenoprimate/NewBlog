@@ -17,28 +17,29 @@
             <span class="theme-picker-label">Theme</span>
 
             <div class="theme-swatches" role="group" aria-label="Colour theme">
-                @foreach (var theme in BlogThemes.All)
-                {
+                @foreach (var theme in BlogThemes.All) {
                     var active = theme.Key == Selection.Theme.Key;
-                    <a class="theme-swatch @(active ? "active" : "")" href="@ThemeUrl("palette", theme.Key)" rel="nofollow" data-enhance-nav="false"
-                       style="@SwatchStyle(theme)" title="@theme.Name" aria-label="@($"{theme.Name} theme")" aria-current="@(active ? "true" : null)"></a>
+                    <a class="theme-swatch @(active ? "active" : "")" href="@ThemeUrl("palette", theme.Key)"
+                       rel="nofollow" data-enhance-nav="false"
+                       style="@SwatchStyle(theme)" title="@theme.Name" aria-label="@($"{theme.Name} theme")"
+                       aria-current="@(active ? "true" : null)"></a>
                 }
             </div>
 
             <div class="theme-modes" role="group" aria-label="Light or dark mode">
-                @foreach (var mode in Enum.GetValues<ThemeMode>().OrderBy(m => m == ThemeMode.System ? 2 : (int)m))
-                {
+                @foreach (var mode in Enum.GetValues<ThemeMode>().OrderBy(m => m == ThemeMode.System ? 2 : (int) m)) {
                     var active = mode == Selection.Mode;
-                    <a class="theme-mode @(active ? "active" : "")" href="@ThemeUrl("mode", mode.ToString().ToLowerInvariant())" rel="nofollow"
+                    <a class="theme-mode @(active ? "active" : "")"
+                       href="@ThemeUrl("mode", mode.ToString().ToLowerInvariant())" rel="nofollow"
                        data-enhance-nav="false" aria-current="@(active ? "true" : null)">@mode</a>
                 }
             </div>
 
             <div class="theme-modes" role="group" aria-label="Background pattern">
-                @foreach (var pattern in Enum.GetValues<BackgroundPattern>())
-                {
+                @foreach (var pattern in Enum.GetValues<BackgroundPattern>()) {
                     var active = pattern == Selection.Pattern;
-                    <a class="theme-mode @(active ? "active" : "")" href="@ThemeUrl("pattern", pattern.ToString().ToLowerInvariant())" rel="nofollow"
+                    <a class="theme-mode @(active ? "active" : "")"
+                       href="@ThemeUrl("pattern", pattern.ToString().ToLowerInvariant())" rel="nofollow"
                        data-enhance-nav="false" aria-current="@(active ? "true" : null)">@pattern</a>
                 }
             </div>
@@ -50,8 +51,7 @@
     [Parameter, EditorRequired]
     public ThemeSelection Selection { get; set; } = default!;
 
-    private string ThemeUrl(string kind, string value)
-    {
+    private string ThemeUrl(string kind, string value) {
         var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
         return $"/theme/{kind}/{value}?returnUrl={Uri.EscapeDataString(returnUrl)}";
     }

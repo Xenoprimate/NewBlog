@@ -1,14 +1,13 @@
 namespace BenBowenBlog.Data;
 
-// A correction noted against a post, shown on the post page between its details and its body.
-public class Erratum
-{
-    public int Id { get; set; }
+public class Erratum {
+	public const int TextMaxLength = 2000;
 
-    public int PostId { get; set; }
+	public int Id { get; set; }
 
-    public DateOnly Date { get; set; }
+	public int PostId { get; set; }
 
-    // Markdown.
-    public required string Text { get; set; }
+	public DateOnly Date { get; set; }
+
+	public required string Text { get; set; }
 }

@@ -6,58 +6,58 @@
 @inject ISnackbar Snackbar
 @inject IconCatalog IconCatalog
 
-<MudInteractiveProviders />
+<MudInteractiveProviders/>
 
 <PageTitle>Categories</PageTitle>
 
-<AdminNav />
+<AdminNav/>
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
     <MudText Typo="Typo.h4" HtmlTag="h1">Categories</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">New category</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="CreateAsync">New category
+    </MudButton>
 </MudStack>
 
-@if (rows is null)
-{
-    <MudProgressLinear Indeterminate="true" />
+@if (rows is null) {
+    <MudProgressLinear Indeterminate="true"/>
 }
-else if (rows.Count == 0)
-{
+else if (rows.Count == 0) {
     <MudText>No categories yet.</MudText>
 }
-else
-{
+else {
     <MudSimpleTable Hover="true" Outlined="true">
         <thead>
-            <tr>
-                <th>Icon</th>
-                <th>Name</th>
-                <th>Posts</th>
-                <th></th>
-            </tr>
+        <tr>
+            <th>Icon</th>
+            <th>Name</th>
+            <th>Posts</th>
+            <th></th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var row in rows)
-            {
-                <tr data-category="@row.Name">
-                    <td><MudIcon Icon="@IconCatalog.Get(row.Icon)" Color="Color.Primary" /></td>
-                    <td>@row.Name</td>
-                    <td>@row.PostCount</td>
-                    <td class="text-right">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="Edit" OnClick="() => EditAsync(row)" />
-                        @if (row.PostCount > 0)
-                        {
-                            <MudTooltip Text="@($"In use by {row.PostCount} post(s); move them to another category first.")">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="Delete" Disabled="true" />
-                            </MudTooltip>
-                        }
-                        else
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="Delete" Color="Color.Error" OnClick="() => DeleteAsync(row)" />
-                        }
-                    </td>
-                </tr>
-            }
+        @foreach (var row in rows) {
+            <tr data-category="@row.Name">
+                <td>
+                    <MudIcon Icon="@IconCatalog.Get(row.Icon)" Color="Color.Primary"/>
+                </td>
+                <td>@row.Name</td>
+                <td>@row.PostCount</td>
+                <td class="text-right">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" aria-label="Edit" OnClick="() => EditAsync(row)"/>
+                    @if (row.PostCount > 0) {
+                        <MudTooltip
+                            Text="@($"In use by {row.PostCount} post(s); move them to another category first.")">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="Delete" Disabled="true"/>
+                        </MudTooltip>
+                    }
+                    else {
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="Delete" Color="Color.Error"
+                                       OnClick="() => DeleteAsync(row)"/>
+                    }
+                </td>
+            </tr>
+        }
         </tbody>
     </MudSimpleTable>
 }
@@ -67,8 +67,7 @@ else
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
-    private async Task LoadAsync()
-    {
+    private async Task LoadAsync() {
         await using var scope = ScopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
 
@@ -81,32 +80,33 @@ else
 
     private Task CreateAsync() => ShowDialogAsync("New category", new DialogParameters<CategoryDialog>());
 
-    private Task EditAsync(CategoryRow row) => ShowDialogAsync("Edit category", new DialogParameters<CategoryDialog>
-    {
-        { d => d.CategoryId, row.Id },
-        { d => d.Name, row.Name },
-        { d => d.Icon, row.Icon }
+    private Task EditAsync(CategoryRow row) => ShowDialogAsync("Edit category", new DialogParameters<CategoryDialog> {
+        {
+            d => d.CategoryId, row.Id
+        }, {
+            d => d.Name, row.Name
+        }, {
+            d => d.Icon, row.Icon
+        }
     });
 
-    private async Task ShowDialogAsync(string title, DialogParameters<CategoryDialog> parameters)
-    {
+    private async Task ShowDialogAsync(string title, DialogParameters<CategoryDialog> parameters) {
         var dialog = await DialogService.ShowAsync<CategoryDialog>(title, parameters,
-            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true });
+            new DialogOptions {
+                MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true
+            });
         var result = await dialog.Result;
 
-        if (result is { Canceled: false })
-        {
+        if (result is {Canceled: false}) {
             await LoadAsync();
             Snackbar.Add("Category saved", Severity.Success);
         }
     }
 
-    private async Task DeleteAsync(CategoryRow row)
-    {
-        var confirmed = await DialogService.ShowMessageBoxAsync("Delete category", $"Delete \"{row.Name}\"?", yesText: "Delete", cancelText: "Cancel");
+    private async Task DeleteAsync(CategoryRow row) {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete category", $"Delete \"{row.Name}\"?", "Delete", cancelText: "Cancel");
 
-        if (confirmed != true)
-        {
+        if (confirmed != true) {
             return;
         }
 
@@ -115,8 +115,7 @@ else
 
         // Re-checked here because a post may have been given this category since the list was loaded;
         // the foreign key (DeleteBehavior.Restrict) would reject the delete anyway.
-        if (await db.Posts.AnyAsync(p => p.CategoryId == row.Id))
-        {
+        if (await db.Posts.AnyAsync(p => p.CategoryId == row.Id)) {
             Snackbar.Add($"\"{row.Name}\" is in use and can't be deleted.", Severity.Warning);
             await LoadAsync();
             return;

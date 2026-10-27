@@ -1,11 +1,9 @@
 ﻿<MudStack Spacing="3">
-    @foreach (var post in Posts)
-    {
+    @foreach (var post in Posts) {
         <MudPaper Outlined="true" Class="post-row">
-            @if (post.CoverImage is not null)
-            {
+            @if (post.CoverImage is not null) {
                 <a class="post-row-thumb" href="@($"/post/{post.Slug}")" tabindex="-1" aria-hidden="true">
-                    <img src="@MediaStore.UrlFor(post.CoverImage)" alt="" loading="lazy" />
+                    <img src="@MediaStore.UrlFor(post.CoverImage)" alt="" loading="lazy"/>
                 </a>
             }
             <div class="post-row-body">
@@ -16,14 +14,12 @@
                     <time datetime="@post.PublishedAt.ToString("O")">@post.PublishedAt.ToString("d MMMM yyyy")</time>
                 </MudText>
                 <div class="mb-1">
-                    @if (ShowCategory)
-                    {
-                        <CategoryLabel Name="@post.CategoryName" Icon="@post.CategoryIcon" />
+                    @if (ShowCategory) {
+                        <CategoryLabel Name="@post.CategoryName" Icon="@post.CategoryIcon"/>
                     }
-                    <TagChips Tags="post.Tags" />
+                    <TagChips Tags="post.Tags"/>
                 </div>
-                @if (post.Summary is not null)
-                {
+                @if (post.Summary is not null) {
                     <MudText Typo="Typo.body2" Class="line-clamp-2">@post.Summary</MudText>
                 }
             </div>

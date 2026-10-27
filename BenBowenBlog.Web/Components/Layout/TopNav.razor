@@ -7,42 +7,39 @@
    click, Escape, or choosing a link. *@
 
 <nav class="d-none d-md-flex align-center" aria-label="Main">
-    @foreach (var link in Links)
-    {
-        <MudButton Href="@link.Href" Color="Color.Inherit" Variant="Variant.Text" StartIcon="@link.Icon">@link.Text</MudButton>
+    @foreach (var link in Links) {
+        <MudButton Href="@link.Href" Color="Color.Inherit" Variant="Variant.Text"
+                   StartIcon="@link.Icon">@link.Text</MudButton>
     }
 
-    @if (Socials.Count > 0)
-    {
+    @if (Socials.Count > 0) {
         <span class="top-nav-divider" aria-hidden="true"></span>
-        @foreach (var social in Socials)
-        {
-            <MudIconButton Href="@social.Url" Target="_blank" rel="noopener" Icon="@social.Icon" Color="Color.Inherit" aria-label="@social.Name" title="@social.Name" />
+        @foreach (var social in Socials) {
+            <MudIconButton Href="@social.Url" Target="_blank" rel="noopener" Icon="@social.Icon" Color="Color.Inherit"
+                           aria-label="@social.Name" title="@social.Name"/>
         }
     }
 </nav>
 
 <details class="mobile-menu d-md-none">
     <summary aria-label="Menu">
-        <MudIcon Icon="@Icons.Material.Filled.Menu" />
+        <MudIcon Icon="@Icons.Material.Filled.Menu"/>
     </summary>
     <div class="mobile-menu-panel mud-elevation-8">
         <nav aria-label="Main">
-            @foreach (var link in Links)
-            {
+            @foreach (var link in Links) {
                 <a class="mobile-menu-link" href="@link.Href">
-                    <MudIcon Icon="@link.Icon" Size="Size.Small" />
+                    <MudIcon Icon="@link.Icon" Size="Size.Small"/>
                     <span>@link.Text</span>
                 </a>
             }
         </nav>
 
-        @if (Socials.Count > 0)
-        {
+        @if (Socials.Count > 0) {
             <div class="mobile-menu-social">
-                @foreach (var social in Socials)
-                {
-                    <MudIconButton Href="@social.Url" Target="_blank" rel="noopener" Icon="@social.Icon" aria-label="@social.Name" title="@social.Name" />
+                @foreach (var social in Socials) {
+                    <MudIconButton Href="@social.Url" Target="_blank" rel="noopener" Icon="@social.Icon"
+                                   aria-label="@social.Name" title="@social.Name"/>
                 }
             </div>
         }
@@ -50,8 +47,7 @@
 </details>
 
 @code {
-    private static readonly NavItem[] Links =
-    [
+    private static readonly NavItem[] Links = [
         new("Tags", "/tags", Icons.Material.Filled.LocalOffer),
         new("Categories", "/categories", Icons.Material.Filled.Category),
         new("About", "/about", Icons.Material.Filled.Info),
@@ -59,17 +55,16 @@
     ];
 
     private List<SocialLink> Socials =>
-        new SocialLink?[]
-        {
-            Social("GitHub", SiteOptions.Value.GitHubUrl, Icons.Custom.Brands.GitHub),
-            Social("LinkedIn", SiteOptions.Value.LinkedInUrl, Icons.Custom.Brands.LinkedIn),
-            Social("Bluesky", SiteOptions.Value.BlueskyUrl, BrandIcons.Bluesky)
-        }
-        .OfType<SocialLink>()
-        .ToList();
+        new SocialLink?[] {
+                Social("GitHub", SiteOptions.Value.GitHubUrl, Icons.Custom.Brands.GitHub),
+                Social("LinkedIn", SiteOptions.Value.LinkedInUrl, Icons.Custom.Brands.LinkedIn),
+                Social("Bluesky", SiteOptions.Value.BlueskyUrl, BrandIcons.Bluesky)
+            }
+            .OfType<SocialLink>()
+            .ToList();
 
     private static SocialLink? Social(string name, string? url, string icon) =>
-        string.IsNullOrWhiteSpace(url) ? null : new SocialLink(name, url, icon);
+        String.IsNullOrWhiteSpace(url) ? null : new SocialLink(name, url, icon);
 
     private record NavItem(string Text, string Href, string Icon);
 

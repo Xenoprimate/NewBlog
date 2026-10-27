@@ -7,34 +7,31 @@
 <div class="home-page">
     <h1 class="visually-hidden">BenBowenBlog</h1>
 
-    @if (posts.Count == 0)
-    {
+    @if (posts.Count == 0) {
         <MudText>No posts yet.</MudText>
     }
-    else
-    {
+    else {
         <MudGrid Spacing="4">
-            @foreach (var post in posts)
-            {
+            @foreach (var post in posts) {
                 <MudItem xs="12" Class="d-flex home-card">
                     <MudCard Outlined="true" Class="flex-grow-1">
-                        @if (post.CoverImage is not null)
-                        {
-                            <MudCardMedia Image="@MediaStore.UrlFor(post.CoverImage)" Height="220" />
+                        @if (post.CoverImage is not null) {
+                            <MudCardMedia Image="@MediaStore.UrlFor(post.CoverImage)" Height="220"/>
                         }
                         <MudCardContent>
                             <MudText Typo="Typo.h5" HtmlTag="h2">
-                                <MudLink Href="@($"/post/{post.Slug}")" Underline="Underline.Hover">@post.Title</MudLink>
+                                <MudLink Href="@($"/post/{post.Slug}")"
+                                         Underline="Underline.Hover">@post.Title</MudLink>
                             </MudText>
                             <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">
-                                <time datetime="@post.PublishedAt.ToString("O")">@post.PublishedAt.ToString("d MMMM yyyy")</time>
+                                <time
+                                    datetime="@post.PublishedAt.ToString("O")">@post.PublishedAt.ToString("d MMMM yyyy")</time>
                             </MudText>
                             <div class="mb-2">
-                                <CategoryLabel Name="@post.CategoryName" Icon="@post.CategoryIcon" />
-                                <TagChips Tags="post.Tags" />
+                                <CategoryLabel Name="@post.CategoryName" Icon="@post.CategoryIcon"/>
+                                <TagChips Tags="post.Tags"/>
                             </div>
-                            @if (post.Summary is not null)
-                            {
+                            @if (post.Summary is not null) {
                                 <MudText>@post.Summary</MudText>
                             }
                         </MudCardContent>
@@ -48,8 +45,7 @@
 @code {
     private List<PostSummary> posts = [];
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         posts = await Db.Posts.AsNoTracking().Published().SelectSummaries().ToListAsync();
     }
 }
