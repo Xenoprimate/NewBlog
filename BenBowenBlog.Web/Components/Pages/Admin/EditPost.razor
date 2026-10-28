@@ -221,7 +221,16 @@ else {
                 </MudButton>
             </MudPaper>
 
-            <MudSwitch T="bool" @bind-Value="model.IsPublished" Label="Published" Color="Color.Primary"/>
+            <div class="publish-row">
+                <MudSwitch T="bool" @bind-Value="model.IsPublished" Label="Published" Color="Color.Primary"/>
+
+                @if (model.IsPublished) {
+                    <MudDatePicker @bind-Date="model.PublishedDate" Label="Publish date" DateFormat="d MMM yyyy"
+                                   MaxDate="DateTime.UtcNow.Date" Clearable="true"
+                                   HelperText="Leave empty to use the current time" Class="publish-date"/>
+                }
+            </div>
+            <ValidationMessage For="() => model.PublishedDate"/>
 
             <div>
                 <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"

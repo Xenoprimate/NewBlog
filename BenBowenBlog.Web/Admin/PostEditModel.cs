@@ -34,6 +34,9 @@ public sealed class PostEditModel : IValidatableObject {
 
 	public bool IsPublished { get; set; }
 
+	// Only the date: empty means "now" when first publishing (see ApplyTo).
+	public DateTime? PublishedDate { get; set; }
+
 	// The post this one follows in a series (see Post.PreviousPostId).
 	public int? PreviousPostId { get; set; }
 
@@ -42,6 +45,7 @@ public sealed class PostEditModel : IValidatableObject {
 	public static PostEditModel FromPost(Post post) => new() {
 		Slug = post.Slug, Title = post.Title, Summary = post.Summary, Body = post.Body,
 		CategoryId = post.CategoryId, TagsText = String.Join(", ", post.Tags), CoverImageAlt = post.CoverImageAlt, IsPublished = post.PublishedAt is not null,
+		PublishedDate = post.PublishedAt?.UtcDateTime.Date,
 		PreviousPostId = post.PreviousPostId, Errata = post.Errata
 			.OrderBy(e => e.Date)
 			.Select(e => new ErratumEditModel {
@@ -74,12 +78,30 @@ public sealed class PostEditModel : IValidatableObject {
 			Date = DateOnly.FromDateTime(e.Date!.Value), Text = e.Text.Trim()
 		}));
 
-		// Keep the original publish date when re-saving a published post.
-		post.PublishedAt = IsPublished ? post.PublishedAt ?? utcNow : null;
+		post.PublishedAt = IsPublished ? PublishedAtFor(post.PublishedAt, utcNow) : null;
 		post.UpdatedAt = utcNow;
 	}
 
+	// Re-saving keeps the existing timestamp unless a different date was chosen; a chosen date is stored at 12:00 UTC so
+	// no time zone shows it as the day before or after.
+	DateTimeOffset PublishedAtFor(DateTimeOffset? existing, DateTimeOffset utcNow) {
+		if (PublishedDate is not { } date) {
+			return existing ?? utcNow;
+		}
+
+		if (existing is { } current && current.UtcDateTime.Date == date.Date) {
+			return current;
+		}
+
+		return new DateTimeOffset(date.Year, date.Month, date.Day, 12, 0, 0, TimeSpan.Zero);
+	}
+
 	public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
+		// Posts with any PublishedAt are listed straight away, so a future date would just show up early, dated ahead.
+		if (IsPublished && PublishedDate?.Date > DateTime.UtcNow.Date) {
+			yield return new("Publish date can't be in the future.", [nameof(PublishedDate)]);
+		}
+
 		var tags = TagTransformer.Normalize(TagsText);
 
 		if (tags.Count > Post.MaxTags) {

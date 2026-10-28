@@ -1024,6 +1024,18 @@ h1:focus {
     }
 }
 
+/* Post editor: the Published switch with its publish date beside it. */
+.publish-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+}
+
+.publish-date {
+    flex: 0 0 16rem;
+}
+
 /* Rendered Markdown. MudBlazor resets element margins, so the post body restores readable typography. */
 .post-body {
     font-size: 1.0625rem;

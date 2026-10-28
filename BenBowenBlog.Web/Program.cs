@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 
-builder.AddNpgsqlDbContext<BlogDbContext>("blogdb");
+builder.AddAzureNpgsqlDbContext<BlogDbContext>("blogdb");
 builder.AddAzureBlobServiceClient("blobs");
 
 // Add services to the container.
