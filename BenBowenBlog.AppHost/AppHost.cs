@@ -14,6 +14,13 @@ var blobs = builder.AddAzureStorage("storage")
 var adminKey = builder.AddParameter("admin-key", secret: true);
 var metricsKey = builder.AddParameter("metrics-key", secret: true);
 
+// Custom domains and their managed certificates (created with `az containerapp hostname bind`); values are in
+// appsettings.json. Declaring them here stops `aspire deploy` from removing them.
+var apexDomain = builder.AddParameter("apex-domain");
+var apexCertificate = builder.AddParameter("apex-certificate");
+var wwwDomain = builder.AddParameter("www-domain");
+var wwwCertificate = builder.AddParameter("www-certificate");
+
 builder.AddProject<Projects.BenBowenBlog_Web>("webfrontend")
 	.WithExternalHttpEndpoints()
 	.WithHttpHealthCheck("/health")
@@ -29,6 +36,8 @@ builder.AddProject<Projects.BenBowenBlog_Web>("webfrontend")
 	.PublishAsAzureContainerApp((_, app) => {
 		app.Template.Scale.MinReplicas = 1;
 		app.Template.Scale.MaxReplicas = 1;
+		app.ConfigureCustomDomain(apexDomain, apexCertificate);
+		app.ConfigureCustomDomain(wwwDomain, wwwCertificate);
 	});
 
 builder.Build().Run();
