@@ -55,6 +55,8 @@ builder.Services.AddOutputCache();
 
 var app = builder.Build();
 
+app.UseSecurityHeaders();
+
 // Apply any pending EF Core migrations before serving requests. Fine for a single instance; with several
 // instances starting at once, run migrations as a separate deployment step instead.
 await using (var scope = app.Services.CreateAsyncScope()) {

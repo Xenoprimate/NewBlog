@@ -55,3 +55,8 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Rider/DataGrip data sources hold database passwords in their JDBC URLs
+.idea/**/dataSources.xml
+.idea/**/dataSources.local.xml
+.idea/**/dataSources/

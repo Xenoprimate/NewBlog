@@ -1,3 +1,5 @@
+using BenBowenBlog.Web.Site;
+
 namespace BenBowenBlog.Web.Theming;
 
 public static class ThemeEndpoints {
@@ -48,7 +50,5 @@ public static class ThemeEndpoints {
 			await next();
 		});
 
-	// Only paths on this site, never "//evil.example" or "/\evil.example".
-	static string SafeReturnUrl(string? url) =>
-		url is {Length: > 0} && url[0] == '/' && (url.Length == 1 || url[1] != '/' && url[1] != '\\') ? url : "/";
+	static string SafeReturnUrl(string? url) => LocalUrl.IsLocal(url) ? url : "/";
 }
