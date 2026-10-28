@@ -20,7 +20,9 @@ builder.AddAzureBlobServiceClient("blobs");
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-	.AddInteractiveServerComponents();
+	.AddInteractiveServerComponents()
+	// The post editor sends the whole Markdown body in one message; the 32 KB default silently drops long posts.
+	.AddHubOptions(options => options.MaximumReceiveMessageSize = 1024 * 1024);
 
 builder.Services.AddMudServices();
 
@@ -76,6 +78,9 @@ if (!app.Environment.IsDevelopment()) {
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
 app.UseHttpsRedirection();
+
+// Old benbowen.blog URLs (and www.) are redirected permanently to their new equivalents.
+app.UseLegacyRedirects();
 
 app.UseColorSchemeClientHint();
 

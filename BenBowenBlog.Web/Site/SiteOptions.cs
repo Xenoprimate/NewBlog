@@ -7,4 +7,7 @@ public sealed class SiteOptions {
 	public string? LinkedInUrl { get; set; }
 
 	public string? BlueskyUrl { get; set; }
+
+	// The site's own host name (e.g. "benbowen.blog"); requests for www.<CanonicalHost> are redirected to it.
+	public string? CanonicalHost { get; set; }
 }
